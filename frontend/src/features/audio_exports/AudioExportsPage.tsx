@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Card, Empty, message, Select, Space, Table, Tag } from "antd";
+import { Alert, Button, Card, Empty, message, Select, Space, Statistic, Table, Tag } from "antd";
 import { DownloadOutlined, ExportOutlined } from "@ant-design/icons";
 import { api, getAuthorizedMediaUrl } from "../../shared/api/client";
 import type { AudioExport } from "../../shared/types/api";
@@ -27,6 +27,12 @@ export function AudioExportsPage({ novelId }: Props) {
     enabled: !!latestPlanId,
   });
 
+  const readinessQuery = useQuery({
+    queryKey: ["audio-readiness", novelId, latestPlanId],
+    queryFn: () => api.getNovelAudioReadiness(novelId!, latestPlanId || undefined),
+    enabled: !!novelId,
+  });
+
   const exportsQuery = useQuery({
     queryKey: ["audio-exports", novelId],
     queryFn: () => api.listAudioExports(novelId!),
@@ -41,8 +47,9 @@ export function AudioExportsPage({ novelId }: Props) {
         format,
       }),
     onSuccess: (exp) => {
-      message.success(`音频导出成功 (${exp.format.toUpperCase()})`);
+      message.success(`音频导出成功 (${(exp.actual_format || exp.format).toUpperCase()})`);
       qc.invalidateQueries({ queryKey: ["audio-exports", novelId] });
+      qc.invalidateQueries({ queryKey: ["audio-readiness", novelId, latestPlanId] });
     },
     onError: (e: Error) => message.error(e.message),
   });
@@ -51,8 +58,35 @@ export function AudioExportsPage({ novelId }: Props) {
     return <Empty description="请先在「小说项目」中选择一本小说" />;
   }
 
+  const readiness = readinessQuery.data;
+
   return (
     <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+      {readiness && (
+        <Card title="导出前就绪度检查">
+          <Space size="large" wrap>
+            <Statistic
+              title="就绪集数"
+              value={`${readiness.ready_episodes} / ${readiness.total_episodes}`}
+            />
+            <Statistic title="待合成/重算字符" value={readiness.remaining_chars} />
+            <Statistic
+              title={`预估剩余费用 (${readiness.currency})`}
+              value={readiness.estimated_remaining_cost}
+              precision={4}
+            />
+          </Space>
+          {!readiness.ready_for_export && (
+            <Alert
+              style={{ marginTop: 12 }}
+              type="warning"
+              showIcon
+              message="存在未合成、已过期或说话人未确认的片段，导出将被拦截，请先在音频制作页完成渲染。"
+            />
+          )}
+        </Card>
+      )}
+
       <Card title="音频拼接与导出 (EXPORT-01)">
         <Space wrap>
           <span>导出格式：</span>
@@ -98,8 +132,13 @@ export function AudioExportsPage({ novelId }: Props) {
           columns={[
             {
               title: "格式",
-              dataIndex: "format",
-              render: (f: string) => <Tag color="blue">{f.toUpperCase()}</Tag>,
+              render: (_, r: AudioExport) => (
+                <Space>
+                  <Tag color="blue">{(r.actual_format || r.format).toUpperCase()}</Tag>
+                  {r.is_mock && <Tag color="purple">MOCK</Tag>}
+                  {r.is_stale && <Tag color="orange">已过期</Tag>}
+                </Space>
+              ),
             },
             {
               title: "状态",
@@ -115,6 +154,11 @@ export function AudioExportsPage({ novelId }: Props) {
               title: "体积",
               dataIndex: "file_size_bytes",
               render: (b: number) => `${(b / 1024).toFixed(1)} KB`,
+            },
+            {
+              title: "校验和",
+              dataIndex: "checksum",
+              render: (c: string | undefined) => (c ? `${c.slice(0, 12)}...` : "-"),
             },
             { title: "创建时间", dataIndex: "created_at" },
             {

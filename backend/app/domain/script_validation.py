@@ -165,3 +165,93 @@ def verify_segments_against_chapters(
         last_end_by_chapter[cid] = max(prev_end, end_off)
 
     return len(errors) == 0, errors
+
+
+@dataclass(frozen=True)
+class RawSynthesisUnit:
+    unit_index: int
+    start_offset: int
+    end_offset: int
+    text_content: str
+    text_hash: str
+
+
+_SENTENCE_BOUNDARY_RE = re.compile(r"[。！？；…!?;]+[”’」』\"'\)\）]?")
+_CLAUSE_BOUNDARY_RE = re.compile(r"[，、：,:]+[”’」』\"']?")
+
+
+def split_text_to_synthesis_units(text: str, max_chars: int) -> list[RawSynthesisUnit]:
+    """
+    P0-06: Deterministically split a ScriptSegment's text into non-overlapping
+    TTS-safe SynthesisUnits <= max_chars without dropping or mutating any character.
+    Prefers sentence boundaries, then clause boundaries, then whitespace, then hard split.
+    """
+    if max_chars < 1:
+        raise ValueError("max_chars must be >= 1")
+    total_len = len(text)
+    if total_len == 0:
+        return []
+    if total_len <= max_chars:
+        return [
+            RawSynthesisUnit(
+                unit_index=0,
+                start_offset=0,
+                end_offset=total_len,
+                text_content=text,
+                text_hash=sha256_text(text),
+            )
+        ]
+
+    units: list[RawSynthesisUnit] = []
+    cursor = 0
+    idx = 0
+    while cursor < total_len:
+        remaining = total_len - cursor
+        if remaining <= max_chars:
+            chunk = text[cursor:total_len]
+            units.append(
+                RawSynthesisUnit(
+                    unit_index=idx,
+                    start_offset=cursor,
+                    end_offset=total_len,
+                    text_content=chunk,
+                    text_hash=sha256_text(chunk),
+                )
+            )
+            break
+
+        window = text[cursor : cursor + max_chars]
+        split_rel = -1
+
+        sent_matches = list(_SENTENCE_BOUNDARY_RE.finditer(window))
+        if sent_matches:
+            split_rel = sent_matches[-1].end()
+
+        if split_rel <= 0:
+            clause_matches = list(_CLAUSE_BOUNDARY_RE.finditer(window))
+            if clause_matches:
+                split_rel = clause_matches[-1].end()
+
+        if split_rel <= 0:
+            ws_pos = window.rfind(" ")
+            if ws_pos > 0:
+                split_rel = ws_pos + 1
+
+        if split_rel <= 0 or split_rel > max_chars:
+            split_rel = max_chars
+
+        end_pos = cursor + split_rel
+        chunk = text[cursor:end_pos]
+        units.append(
+            RawSynthesisUnit(
+                unit_index=idx,
+                start_offset=cursor,
+                end_offset=end_pos,
+                text_content=chunk,
+                text_hash=sha256_text(chunk),
+            )
+        )
+        cursor = end_pos
+        idx += 1
+
+    return units

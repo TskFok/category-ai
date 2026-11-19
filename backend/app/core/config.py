@@ -64,18 +64,31 @@ class Settings(BaseSettings):
     episode_target_minutes: int = Field(default=25, ge=5, le=120)
     episode_chars_per_minute: int = Field(default=260, ge=100, le=600)
     speaker_review_threshold: float = Field(default=0.80, ge=0.0, le=1.0)
+    allow_low_confidence_auto_pass: bool = False
 
     # TTS & Audio Pipeline (VOICE-01, TTS-01, EXPORT-01)
     tts_provider: str = "cosyvoice"
     cosyvoice_api_key: str = ""
     cosyvoice_base_url: str = "https://dashscope.aliyuncs.com/api/v1"
+    cosyvoice_tts_endpoint: str = "/services/audio/tts/SpeechSynthesizer"
+    cosyvoice_voice_design_endpoint: str = "/services/audio/tts/customization"
+    cosyvoice_voice_enrollment_model: str = "voice-enrollment"
     cosyvoice_model: str = "cosyvoice-v3.5-flash"
     tts_mock_mode: bool = True
     tts_max_concurrency: int = Field(default=2, ge=1, le=32)
     tts_max_retries: int = Field(default=3, ge=0, le=10)
     tts_timeout_seconds: float = Field(default=120.0, gt=0)
     tts_max_chars_per_request: int = Field(default=400, ge=50, le=2000)
-    tts_price_per_10k_chars: float = 0.20
+    tts_unit_safety_margin: int = Field(default=20, ge=0, le=200)
+    # 2026-11-19 Beijing region CosyVoice v3.5 Flash public rate: 0.80 CNY / 10k chars
+    tts_price_per_10k_chars: float = 0.80
+    tts_currency: str = "CNY"
+    llm_currency: str = "USD"
+    tts_daily_budget_limit: float = Field(default=100.0, ge=0.0)
+    allow_mock_audio_export: bool = False
+
+    # Short-lived signed media token TTL (seconds)
+    media_token_ttl_seconds: int = Field(default=300, ge=30, le=3600)
 
     ffmpeg_bin: str = "ffmpeg"
     audio_output_format: str = "mp3"

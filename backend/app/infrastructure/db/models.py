@@ -30,9 +30,11 @@ from app.domain.enums import (
     ReviewTaskState,
     SegmentReviewStatus,
     SegmentType,
+    SynthesisUnitStatus,
     TaskState,
     VerificationStatus,
     VoiceApprovalStatus,
+    VoiceProviderStatus,
 )
 from app.infrastructure.db.session import Base
 
@@ -648,6 +650,10 @@ class ScriptSegment(Base, TimestampMixin):
     )
     manual_override: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     revision: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    stable_span_key: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    content_revision: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    analysis_run_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    is_render_blocked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
 
 class SegmentCandidate(Base, TimestampMixin):
@@ -701,6 +707,40 @@ class VoiceProfile(Base, TimestampMixin):
     candidates_json: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
     consent_confirmed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     consent_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    provider_status: Mapped[str] = mapped_column(
+        String(32), default=VoiceProviderStatus.OK.value, nullable=False
+    )
+    preview_checksum: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    prompt_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class VoiceProfileVersion(Base, TimestampMixin):
+    __tablename__ = "voice_profile_versions"
+    __table_args__ = (
+        UniqueConstraint("voice_profile_id", "version", name="uq_voice_profile_ver"),
+        Index("ix_voice_profile_ver_profile", "voice_profile_id", "version"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    voice_profile_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("voice_profiles.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    novel_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("novels.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    voice_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    target_model: Mapped[str] = mapped_column(String(64), default="cosyvoice-v3.5-flash", nullable=False)
+    voice_prompt: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    default_rate: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
+    pitch: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
+    provider_status: Mapped[str] = mapped_column(
+        String(32), default=VoiceProviderStatus.OK.value, nullable=False
+    )
+    preview_checksum: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    approval_status: Mapped[str] = mapped_column(
+        String(32), default=VoiceApprovalStatus.DRAFT.value, nullable=False
+    )
 
 
 class VoicePerformance(Base, TimestampMixin):
@@ -719,9 +759,34 @@ class VoicePerformance(Base, TimestampMixin):
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
 
+class BookRenderJob(Base, TimestampMixin):
+    __tablename__ = "book_render_jobs"
+    __table_args__ = (Index("ix_book_render_jobs_novel", "novel_id", "created_at"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    novel_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("novels.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    plan_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("episode_plans.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    status: Mapped[str] = mapped_column(String(32), default=JobState.PENDING.value, nullable=False)
+    episode_ids_json: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
+    budget_limit: Mapped[float] = mapped_column(Float, default=100.0, nullable=False)
+    spent_cost: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    currency: Mapped[str] = mapped_column(String(8), default="CNY", nullable=False)
+    progress_json: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    paused_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    error_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
 class RenderJob(Base, TimestampMixin):
     __tablename__ = "render_jobs"
-    __table_args__ = (Index("ix_render_jobs_episode", "episode_id", "created_at"),)
+    __table_args__ = (
+        Index("ix_render_jobs_episode", "episode_id", "created_at"),
+        UniqueConstraint("episode_id", "idempotency_key", name="uq_render_jobs_ep_idempotency"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     novel_id: Mapped[str] = mapped_column(
@@ -730,6 +795,9 @@ class RenderJob(Base, TimestampMixin):
     episode_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("episodes.id", ondelete="CASCADE"), nullable=False, index=True
     )
+    book_render_job_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("book_render_jobs.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     status: Mapped[str] = mapped_column(String(32), default=JobState.PENDING.value, nullable=False)
     budget_limit: Mapped[float] = mapped_column(Float, default=20.0, nullable=False)
     spent_cost: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
@@ -737,7 +805,46 @@ class RenderJob(Base, TimestampMixin):
     profile_snapshot_json: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     progress_json: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     idempotency_key: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    paused_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    resume_cursor: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     error_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class SynthesisUnit(Base, TimestampMixin):
+    __tablename__ = "synthesis_units"
+    __table_args__ = (
+        UniqueConstraint("script_segment_id", "unit_index", name="uq_synthesis_units_seg_idx"),
+        Index("ix_synthesis_units_seg", "script_segment_id", "unit_index"),
+        Index("ix_synthesis_units_ep_status", "episode_id", "status"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    novel_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("novels.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    episode_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("episodes.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    script_segment_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("script_segments.id", ondelete="CASCADE"), nullable=False
+    )
+    unit_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    start_offset: Mapped[int] = mapped_column(Integer, nullable=False)
+    end_offset: Mapped[int] = mapped_column(Integer, nullable=False)
+    text_content: Mapped[str] = mapped_column(Text, nullable=False)
+    text_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(32), default=SynthesisUnitStatus.PENDING.value, nullable=False
+    )
+    attempt: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    next_retry_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    audio_ref: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    audio_format: Mapped[str] = mapped_column(String(16), default="wav", nullable=False)
+    duration_ms: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    checksum: Mapped[str] = mapped_column(String(64), default="", nullable=False)
+    cache_key: Mapped[str] = mapped_column(String(128), default="", nullable=False)
 
 
 class AudioSegment(Base, TimestampMixin):
@@ -764,14 +871,21 @@ class AudioSegment(Base, TimestampMixin):
         String(36), ForeignKey("voice_profiles.id", ondelete="SET NULL"), nullable=True
     )
     voice_profile_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    script_revision: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    render_input_hash: Mapped[str] = mapped_column(String(128), default="", nullable=False)
     voice_id: Mapped[str] = mapped_column(String(128), default="", nullable=False)
     audio_ref: Mapped[str | None] = mapped_column(String(512), nullable=True)
     audio_format: Mapped[str] = mapped_column(String(16), default="wav", nullable=False)
+    sample_rate: Mapped[int] = mapped_column(Integer, default=24000, nullable=False)
+    channels: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     duration_ms: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     file_size_bytes: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     checksum: Mapped[str] = mapped_column(String(64), default="", nullable=False)
     cache_key: Mapped[str] = mapped_column(String(128), default="", nullable=False)
     is_current: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_mock: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    provider: Mapped[str] = mapped_column(String(64), default="cosyvoice", nullable=False)
+    model: Mapped[str] = mapped_column(String(64), default="cosyvoice-v3.5-flash", nullable=False)
     status: Mapped[str] = mapped_column(
         String(32), default=AudioSegmentStatus.PENDING.value, nullable=False
     )
@@ -789,12 +903,20 @@ class AudioExport(Base, TimestampMixin):
     episode_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("episodes.id", ondelete="SET NULL"), nullable=True
     )
+    plan_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("episode_plans.id", ondelete="SET NULL"), nullable=True
+    )
     format: Mapped[str] = mapped_column(String(16), default="mp3", nullable=False)  # mp3 | wav | zip
+    actual_format: Mapped[str] = mapped_column(String(16), default="", nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="pending", nullable=False)
     manifest_ref: Mapped[str | None] = mapped_column(String(512), nullable=True)
     file_ref: Mapped[str | None] = mapped_column(String(512), nullable=True)
     file_size_bytes: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     duration_ms: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    checksum: Mapped[str] = mapped_column(String(64), default="", nullable=False)
+    source_snapshot_hash: Mapped[str] = mapped_column(String(64), default="", nullable=False)
+    is_stale: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_mock: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
@@ -814,9 +936,14 @@ class ProviderCall(Base, TimestampMixin):
     operation: Mapped[str] = mapped_column(String(64), default="synthesize", nullable=False)
     request_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     input_chars: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    billed_characters: Mapped[int | None] = mapped_column(Integer, nullable=True)
     audio_duration_ms: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     estimated_cost: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     actual_cost: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    currency: Mapped[str] = mapped_column(String(8), default="CNY", nullable=False)
+    cost_kind: Mapped[str] = mapped_column(String(16), default="estimated", nullable=False)
+    provider_request_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    is_mock: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     latency_ms: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     attempt: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="ok", nullable=False)

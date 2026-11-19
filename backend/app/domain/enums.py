@@ -128,6 +128,21 @@ class AudioExportFormat(StrEnum):
     ZIP = "zip"
 
 
+class SynthesisUnitStatus(StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    SKIPPED = "skipped"
+
+
+class VoiceProviderStatus(StrEnum):
+    DEPLOYING = "DEPLOYING"
+    OK = "OK"
+    UNDEPLOYED = "UNDEPLOYED"
+    UNKNOWN = "UNKNOWN"
+
+
 SYMMETRIC_RELATION_TYPES: frozenset[str] = frozenset(
     {
         "ally",

@@ -71,9 +71,19 @@ export function VoicesPage({ novelId }: Props) {
         scope: "all_episodes",
       }),
     onSuccess: (res) => {
+      const cur = res.currency || "CNY";
       message.success(
-        `已锁定音色 ${res.profile.voice_id}（涉及 ${res.impacted_segments} 段，预估重算 \$${res.estimated_rerender_cost.toFixed(4)}）`
+        `已锁定音色 ${res.profile.voice_id} (v${res.profile.profile_version})：影响 ${res.impacted_segments} 段 / ${res.impacted_chars} 字，已失效 ${res.invalidated_audio_segments ?? 0} 段，预估重算 ${res.estimated_rerender_cost.toFixed(4)} ${cur}`
       );
+      qc.invalidateQueries({ queryKey: ["voice-profiles", novelId] });
+    },
+    onError: (e: Error) => message.error(e.message),
+  });
+
+  const syncStatusMut = useMutation({
+    mutationFn: (profileId: string) => api.getVoiceProviderStatus(profileId),
+    onSuccess: (res) => {
+      message.info(`音色 ${res.voice_id || "-"} 供应商状态：${res.provider_status}`);
       qc.invalidateQueries({ queryKey: ["voice-profiles", novelId] });
     },
     onError: (e: Error) => message.error(e.message),
@@ -190,12 +200,18 @@ export function VoicesPage({ novelId }: Props) {
               render: (v: string | null) => v || <Typography.Text type="secondary">未生成</Typography.Text>,
             },
             {
-              title: "状态",
+              title: "状态 / 版本",
               render: (_, r: VoiceProfile) => (
-                <Space>
+                <Space wrap>
                   <Tag color={r.approval_status === "locked" ? "green" : "orange"}>
                     {r.approval_status}
                   </Tag>
+                  <Tag>v{r.profile_version}</Tag>
+                  {r.provider_status && (
+                    <Tag color={r.provider_status === "OK" ? "green" : "gold"}>
+                      {r.provider_status}
+                    </Tag>
+                  )}
                   {r.is_active && <Tag color="cyan">当前激活</Tag>}
                 </Space>
               ),
@@ -203,7 +219,7 @@ export function VoicesPage({ novelId }: Props) {
             {
               title: "操作",
               render: (_, r: VoiceProfile) => (
-                <Space>
+                <Space wrap>
                   <Button
                     size="small"
                     icon={<SoundOutlined />}
@@ -212,6 +228,15 @@ export function VoicesPage({ novelId }: Props) {
                   >
                     AI 设计候选音色
                   </Button>
+                  {r.voice_id && (
+                    <Button
+                      size="small"
+                      loading={syncStatusMut.isPending}
+                      onClick={() => syncStatusMut.mutate(r.id)}
+                    >
+                      查状态
+                    </Button>
+                  )}
                   {r.voice_id && r.approval_status !== "locked" && (
                     <Button
                       size="small"

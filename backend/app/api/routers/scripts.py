@@ -7,6 +7,7 @@ from app.api.deps import get_storage
 from app.api.schemas import (
     ScriptSegmentOut,
     ScriptSegmentUpdateIn,
+    ScriptValidationOut,
     SpeakerReviewBatchIn,
 )
 from app.application import script_service
@@ -81,3 +82,14 @@ def submit_speaker_review(
         db, episode_id, [d.model_dump() for d in body.decisions]
     )
     return {"episode_id": episode_id, "updated_count": updated}
+
+
+@router.post("/episodes/{episode_id}/validate-script", response_model=ScriptValidationOut)
+def validate_episode_script(
+    episode_id: str,
+    db: Session = Depends(get_db),
+    storage: LocalStorage = Depends(get_storage),
+    settings: Settings = Depends(get_settings),
+    _principal: Principal = Depends(require_roles(UserRole.ADMIN, UserRole.REVIEWER, UserRole.READER)),
+):
+    return script_service.validate_episode_script(db, storage, settings, episode_id)

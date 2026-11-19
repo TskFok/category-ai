@@ -26,7 +26,7 @@ def make_audio_cache_key(
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-def estimate_tts_cost(char_count: int, price_per_10k_chars: float = 0.20) -> float:
+def estimate_tts_cost(char_count: int, price_per_10k_chars: float = 0.80) -> float:
     if char_count <= 0:
         return 0.0
     return round((char_count / 10_000.0) * price_per_10k_chars, 6)

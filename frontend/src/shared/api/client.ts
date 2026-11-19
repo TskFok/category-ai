@@ -2,6 +2,7 @@ import type {
   AnalysisReport,
   AudioExport,
   AudioSegment,
+  BookRenderJob,
   ChapterDetail,
   ChapterSummary,
   CharacterDetail,
@@ -17,15 +18,18 @@ import type {
   Job,
   MentionItem,
   Novel,
+  NovelAudioReadiness,
   PaginatedResponse,
   ProviderUsageSummary,
   RelationshipItem,
   RenderJob,
   ReviewTask,
   ScriptSegment,
+  ScriptValidation,
   UsageSummary,
   VoiceLockResult,
   VoiceProfile,
+  VoiceProviderStatus,
 } from "../types/api";
 
 const API_BASE = "/api/v1";
@@ -44,6 +48,12 @@ export function setAuthToken(token: string): void {
     const trimmed = token.trim();
     if (trimmed) {
       sessionStorage.setItem(AUTH_TOKEN_KEY, trimmed);
+      // P1-08: Establish HttpOnly SameSite=Lax cookie so <audio> & downloads authenticate without URL tokens
+      fetch(`${API_BASE}/auth/session`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { Authorization: `Bearer ${trimmed}` },
+      }).catch(() => {});
     } else {
       sessionStorage.removeItem(AUTH_TOKEN_KEY);
     }
@@ -53,14 +63,11 @@ export function setAuthToken(token: string): void {
 }
 
 /**
- * Append access_token query param ONLY when a session Bearer token is configured,
- * allowing HTML <audio> and download links to authenticate cleanly (FIX-04).
+ * P1-08: Never append long-lived access_token into URLs (leaks to logs & browser history).
+ * Media playback & downloads rely on the HttpOnly session cookie or short-lived signed media_token.
  */
 export function getAuthorizedMediaUrl(url: string): string {
-  const token = getAuthToken();
-  if (!token) return url;
-  const sep = url.includes("?") ? "&" : "?";
-  return `${url}${sep}access_token=${encodeURIComponent(token)}`;
+  return url;
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -271,6 +278,9 @@ export const api = {
   analyzeEpisodeScript: (episodeId: string) =>
     request<ScriptSegment[]>(`/episodes/${episodeId}/analyze-script`, { method: "POST" }),
 
+  validateEpisodeScript: (episodeId: string) =>
+    request<ScriptValidation>(`/episodes/${episodeId}/validate-script`, { method: "POST" }),
+
   listEpisodeSegments: (episodeId: string, reviewStatus?: string) => {
     const qs = new URLSearchParams();
     if (reviewStatus) qs.set("review_status", reviewStatus);
@@ -336,11 +346,29 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
-  // M3: Render Jobs & Audio Exports
+  updateVoiceAndInvalidate: (
+    profileId: string,
+    payload: {
+      voice_id?: string;
+      voice_prompt?: string;
+      default_rate?: number;
+      pitch?: number;
+      scope?: "unrendered_only" | "current_episode" | "all_episodes";
+    }
+  ) =>
+    request<VoiceLockResult>(`/voice-profiles/${profileId}/update-and-invalidate`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  getVoiceProviderStatus: (profileId: string) =>
+    request<VoiceProviderStatus>(`/voice-profiles/${profileId}/provider-status`),
+
+  // M3/M4: Render Jobs, Book Render Jobs & Audio Exports
   createRenderJob: (
     episodeId: string,
     payload: { budget_limit?: number; idempotency_key?: string; run_inline?: boolean } = {
-      run_inline: true,
+      run_inline: false,
     }
   ) =>
     request<RenderJob>(`/episodes/${episodeId}/render-jobs`, {
@@ -351,6 +379,37 @@ export const api = {
   listRenderJobs: (episodeId: string) =>
     request<RenderJob[]>(`/episodes/${episodeId}/render-jobs`),
 
+  pauseRenderJob: (jobId: string) =>
+    request<RenderJob>(`/render-jobs/${jobId}/pause`, { method: "POST" }),
+
+  resumeRenderJob: (jobId: string) =>
+    request<RenderJob>(`/render-jobs/${jobId}/resume`, { method: "POST" }),
+
+  cancelRenderJob: (jobId: string) =>
+    request<RenderJob>(`/render-jobs/${jobId}/cancel`, { method: "POST" }),
+
+  retryFailedRenderJob: (jobId: string) =>
+    request<RenderJob>(`/render-jobs/${jobId}/retry-failed`, { method: "POST" }),
+
+  createBookRenderJob: (
+    planId: string,
+    payload: { episode_ids?: string[]; budget_limit?: number; run_inline?: boolean } = {
+      run_inline: false,
+    }
+  ) =>
+    request<BookRenderJob>(`/episode-plans/${planId}/render`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  getBookRenderJob: (jobId: string) =>
+    request<BookRenderJob>(`/book-render-jobs/${jobId}`),
+
+  getNovelAudioReadiness: (novelId: string, planId?: string) => {
+    const qs = planId ? `?plan_id=${encodeURIComponent(planId)}` : "";
+    return request<NovelAudioReadiness>(`/novels/${novelId}/audio-readiness${qs}`);
+  },
+
   regenerateScriptSegment: (segmentId: string) =>
     request<AudioSegment>(`/script-segments/${segmentId}/regenerate`, { method: "POST" }),
 
@@ -359,7 +418,12 @@ export const api = {
 
   createAudioExport: (
     novelId: string,
-    payload: { episode_id?: string; plan_id?: string; format: "mp3" | "wav" | "zip" }
+    payload: {
+      episode_id?: string;
+      plan_id?: string;
+      format: "mp3" | "wav" | "zip";
+      allow_wav_fallback?: boolean;
+    }
   ) =>
     request<AudioExport>(`/novels/${novelId}/audio-exports`, {
       method: "POST",

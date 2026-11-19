@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -25,12 +26,25 @@ from app.core.security import validate_production_auth_config
 from app.infrastructure.db import models  # noqa: F401
 from app.infrastructure.db.session import Base, engine
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     settings = get_settings()
     configure_logging(settings.log_level)
     validate_production_auth_config(settings)
+    if settings.app_env == "production":
+        if settings.tts_mock_mode or not (settings.cosyvoice_api_key or "").strip():
+            logger.warning(
+                "PRODUCTION CONFIG ALERT: CosyVoice credentials missing or TTS_MOCK_MODE=true; "
+                "TTS synthesis & voice design tasks will be blocked until configured."
+            )
+        if settings.deepseek_mock_mode or not (settings.deepseek_api_key or "").strip():
+            logger.warning(
+                "PRODUCTION CONFIG ALERT: DeepSeek credentials missing or DEEPSEEK_MOCK_MODE=true; "
+                "LLM analysis tasks will be blocked until configured."
+            )
     # Auto-create tables in sqlite dev/test mode; PostgreSQL uses Alembic migrations
     if settings.database_url.startswith("sqlite"):
         Base.metadata.create_all(bind=engine)

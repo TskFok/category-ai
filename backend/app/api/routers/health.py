@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.core.config import Settings, get_settings
 from app.infrastructure.db.session import get_db
 from app.infrastructure.redis.client import get_redis_client
 
@@ -15,7 +16,10 @@ def health_live() -> dict:
 
 
 @router.get("/ready")
-def health_ready(db: Session = Depends(get_db)):
+def health_ready(
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+):
     checks = {"database": "ok", "redis": "ok"}
     http_status = status.HTTP_200_OK
 
@@ -28,10 +32,25 @@ def health_ready(db: Session = Depends(get_db)):
     redis_client = get_redis_client()
     if redis_client is None:
         checks["redis"] = "unavailable"
-        # Do not fail readiness in dev sqlite/local mode when redis is optional,
-        # but surface status clearly.
+
+    llm_mode = (
+        "real"
+        if (not settings.deepseek_mock_mode and bool((settings.deepseek_api_key or "").strip()))
+        else ("misconfigured" if settings.app_env == "production" else "mock")
+    )
+    tts_mode = (
+        "real"
+        if (not settings.tts_mock_mode and bool((settings.cosyvoice_api_key or "").strip()))
+        else ("misconfigured" if settings.app_env == "production" else "mock")
+    )
+    checks["deepseek_mode"] = llm_mode
+    checks["cosyvoice_mode"] = tts_mode
 
     return JSONResponse(
         status_code=http_status,
-        content={"status": "ok" if http_status == 200 else "degraded", "checks": checks},
+        content={
+            "status": "ok" if http_status == 200 else "degraded",
+            "app_env": settings.app_env,
+            "checks": checks,
+        },
     )

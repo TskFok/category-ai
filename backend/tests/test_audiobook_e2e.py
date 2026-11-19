@@ -111,8 +111,17 @@ def test_full_audiobook_pipeline_e2e(client: TestClient):
         and s["end_offset"] == target_seg["end_offset"]
     ]
     assert len(matched_after) == 1
+    assert matched_after[0]["id"] == target_seg["id"]  # P0-03: Stable segment ID preserved!
     assert matched_after[0]["manual_override"] is True
     assert matched_after[0]["speaker_character_id"] == char_by_name["南宫婉"]["id"]
+
+    # Resolve any remaining needs_review segments before testing locked-voice gate (P0-04)
+    for rem in [s for s in re_segs if s["review_status"] == "needs_review"]:
+        client.patch(
+            f"/api/v1/script-segments/{rem['id']}",
+            json={"speaker_character_id": char_by_name["韩立"]["id"], "review_status": "confirmed"},
+        )
+    re_segs = client.get(f"/api/v1/episodes/{ep1['id']}/segments").json()
 
     # 4. VOICE-01: Render blocked before voices are locked
     blocked_render = client.post(

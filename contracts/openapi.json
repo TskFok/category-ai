@@ -73,6 +73,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -201,6 +217,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -304,6 +336,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -452,6 +500,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -558,6 +622,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -661,6 +741,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -801,6 +897,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -904,6 +1016,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -1013,6 +1141,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -1116,6 +1260,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -1226,6 +1386,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -1327,6 +1503,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -1517,6 +1709,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -1620,6 +1828,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -1749,6 +1973,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -1892,6 +2132,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -2002,6 +2258,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -2109,6 +2381,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -2326,6 +2614,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -2429,6 +2733,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -2551,6 +2871,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -2722,6 +3058,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -2825,6 +3177,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -2935,6 +3303,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -3039,6 +3423,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -3156,6 +3556,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -3270,6 +3686,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -3380,6 +3812,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -3486,6 +3934,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -3587,6 +4051,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -3704,6 +4184,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -3814,6 +4310,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -3921,6 +4433,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -4040,6 +4568,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -4143,6 +4687,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -4288,6 +4848,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -4395,6 +4971,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -4514,6 +5106,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -4594,6 +5202,128 @@
         }
       }
     },
+    "/api/v1/episodes/{episode_id}/validate-script": {
+      "post": {
+        "tags": [
+          "scripts"
+        ],
+        "summary": "Validate Episode Script",
+        "operationId": "validate_episode_script_api_v1_episodes__episode_id__validate_script_post",
+        "parameters": [
+          {
+            "name": "episode_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Episode Id"
+            }
+          },
+          {
+            "name": "access_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "ncke_session_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ncke Session Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScriptValidationOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/novels/{novel_id}/voice-profiles": {
       "get": {
         "tags": [
@@ -4625,6 +5355,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -4733,6 +5479,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -4852,6 +5614,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -4968,6 +5746,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -5050,6 +5844,138 @@
         }
       }
     },
+    "/api/v1/voice-profiles/{profile_id}/update-and-invalidate": {
+      "post": {
+        "tags": [
+          "voices"
+        ],
+        "summary": "Update Voice And Invalidate",
+        "operationId": "update_voice_and_invalidate_api_v1_voice_profiles__profile_id__update_and_invalidate_post",
+        "parameters": [
+          {
+            "name": "profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Profile Id"
+            }
+          },
+          {
+            "name": "access_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "ncke_session_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ncke Session Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoiceProfileUpdateIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoiceLockResultOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/voice-profiles/{profile_id}": {
       "patch": {
         "tags": [
@@ -5081,6 +6007,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -5166,6 +6108,128 @@
         }
       }
     },
+    "/api/v1/voice-profiles/{profile_id}/provider-status": {
+      "get": {
+        "tags": [
+          "voices"
+        ],
+        "summary": "Get Voice Provider Status",
+        "operationId": "get_voice_provider_status_api_v1_voice_profiles__profile_id__provider_status_get",
+        "parameters": [
+          {
+            "name": "profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Profile Id"
+            }
+          },
+          {
+            "name": "access_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "ncke_session_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ncke Session Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoiceProviderStatusOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/voice-profiles/{profile_id}/preview": {
       "get": {
         "tags": [
@@ -5214,6 +6278,258 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "ncke_session_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ncke Session Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/media-token": {
+      "post": {
+        "tags": [
+          "audio"
+        ],
+        "summary": "Mint Media Token",
+        "description": "P1-08: Issue a short-lived path-scoped HMAC token for <audio> playback or downloads.",
+        "operationId": "mint_media_token_api_v1_auth_media_token_post",
+        "parameters": [
+          {
+            "name": "access_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "ncke_session_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ncke Session Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MediaTokenRequestIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaTokenOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/session": {
+      "post": {
+        "tags": [
+          "audio"
+        ],
+        "summary": "Establish Session Cookie",
+        "description": "P1-08: Establish SameSite=Lax HttpOnly session cookie for media endpoints.",
+        "operationId": "establish_session_cookie_api_v1_auth_session_post",
+        "parameters": [
+          {
+            "name": "access_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -5318,6 +6634,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -5435,6 +6767,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -5545,6 +6893,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -5617,6 +6981,1027 @@
         }
       }
     },
+    "/api/v1/render-jobs/{job_id}/pause": {
+      "post": {
+        "tags": [
+          "audio"
+        ],
+        "summary": "Pause Render Job",
+        "operationId": "pause_render_job_api_v1_render_jobs__job_id__pause_post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "access_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "ncke_session_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ncke Session Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderJobOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/render-jobs/{job_id}/resume": {
+      "post": {
+        "tags": [
+          "audio"
+        ],
+        "summary": "Resume Render Job",
+        "operationId": "resume_render_job_api_v1_render_jobs__job_id__resume_post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "run_inline",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Run Inline"
+            }
+          },
+          {
+            "name": "access_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "ncke_session_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ncke Session Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderJobOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/render-jobs/{job_id}/cancel": {
+      "post": {
+        "tags": [
+          "audio"
+        ],
+        "summary": "Cancel Render Job",
+        "operationId": "cancel_render_job_api_v1_render_jobs__job_id__cancel_post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "access_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "ncke_session_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ncke Session Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderJobOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/render-jobs/{job_id}/retry-failed": {
+      "post": {
+        "tags": [
+          "audio"
+        ],
+        "summary": "Retry Failed Render Job",
+        "operationId": "retry_failed_render_job_api_v1_render_jobs__job_id__retry_failed_post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "run_inline",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Run Inline"
+            }
+          },
+          {
+            "name": "access_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "ncke_session_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ncke Session Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderJobOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/render-jobs/{job_id}/events": {
+      "get": {
+        "tags": [
+          "audio"
+        ],
+        "summary": "Stream Render Job Events",
+        "description": "P1-01: SSE incremental status stream for a render job.",
+        "operationId": "stream_render_job_events_api_v1_render_jobs__job_id__events_get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "access_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "ncke_session_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ncke Session Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/episode-plans/{plan_id}/render": {
+      "post": {
+        "tags": [
+          "audio"
+        ],
+        "summary": "Create Book Render Job",
+        "operationId": "create_book_render_job_api_v1_episode_plans__plan_id__render_post",
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Plan Id"
+            }
+          },
+          {
+            "name": "access_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "ncke_session_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ncke Session Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookRenderJobCreateIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookRenderJobOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/book-render-jobs/{job_id}": {
+      "get": {
+        "tags": [
+          "audio"
+        ],
+        "summary": "Get Book Render Job",
+        "operationId": "get_book_render_job_api_v1_book_render_jobs__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "access_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "ncke_session_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ncke Session Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookRenderJobOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/novels/{novel_id}/audio-readiness": {
+      "get": {
+        "tags": [
+          "audio"
+        ],
+        "summary": "Get Novel Audio Readiness",
+        "operationId": "get_novel_audio_readiness_api_v1_novels__novel_id__audio_readiness_get",
+        "parameters": [
+          {
+            "name": "novel_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Novel Id"
+            }
+          },
+          {
+            "name": "plan_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Plan Id"
+            }
+          },
+          {
+            "name": "access_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "ncke_session_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ncke Session Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NovelAudioReadinessOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/script-segments/{segment_id}/regenerate": {
       "post": {
         "tags": [
@@ -5648,6 +8033,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -5757,6 +8158,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -5858,6 +8275,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -5975,6 +8408,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -6085,6 +8534,22 @@
             }
           },
           {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -6186,6 +8651,22 @@
                 }
               ],
               "title": "Access Token"
+            }
+          },
+          {
+            "name": "media_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Token"
             }
           },
           {
@@ -6491,6 +8972,11 @@
             "pattern": "^(mp3|wav|zip)$",
             "title": "Format",
             "default": "mp3"
+          },
+          "allow_wav_fallback": {
+            "type": "boolean",
+            "title": "Allow Wav Fallback",
+            "default": false
           }
         },
         "type": "object",
@@ -6517,9 +9003,25 @@
             ],
             "title": "Episode Id"
           },
+          "plan_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Id"
+          },
           "format": {
             "type": "string",
             "title": "Format"
+          },
+          "actual_format": {
+            "type": "string",
+            "title": "Actual Format",
+            "default": ""
           },
           "status": {
             "type": "string",
@@ -6532,6 +9034,26 @@
           "duration_ms": {
             "type": "integer",
             "title": "Duration Ms"
+          },
+          "checksum": {
+            "type": "string",
+            "title": "Checksum",
+            "default": ""
+          },
+          "source_snapshot_hash": {
+            "type": "string",
+            "title": "Source Snapshot Hash",
+            "default": ""
+          },
+          "is_stale": {
+            "type": "boolean",
+            "title": "Is Stale",
+            "default": false
+          },
+          "is_mock": {
+            "type": "boolean",
+            "title": "Is Mock",
+            "default": false
           },
           "error_message": {
             "anyOf": [
@@ -6613,6 +9135,11 @@
             "type": "integer",
             "title": "Voice Profile Version"
           },
+          "script_revision": {
+            "type": "integer",
+            "title": "Script Revision",
+            "default": 1
+          },
           "voice_id": {
             "type": "string",
             "title": "Voice Id"
@@ -6620,6 +9147,16 @@
           "audio_format": {
             "type": "string",
             "title": "Audio Format"
+          },
+          "sample_rate": {
+            "type": "integer",
+            "title": "Sample Rate",
+            "default": 24000
+          },
+          "channels": {
+            "type": "integer",
+            "title": "Channels",
+            "default": 1
           },
           "duration_ms": {
             "type": "integer",
@@ -6640,6 +9177,21 @@
           "is_current": {
             "type": "boolean",
             "title": "Is Current"
+          },
+          "is_mock": {
+            "type": "boolean",
+            "title": "Is Mock",
+            "default": false
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "default": "cosyvoice"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "default": "cosyvoice-v3.5-flash"
           },
           "status": {
             "type": "string",
@@ -6745,6 +9297,177 @@
           "file"
         ],
         "title": "Body_create_novel_api_v1_novels_post"
+      },
+      "BookEpisodeJobMiniOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "episode_id": {
+            "type": "string",
+            "title": "Episode Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "spent_cost": {
+            "type": "number",
+            "title": "Spent Cost"
+          },
+          "progress_json": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Progress Json"
+          },
+          "error_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "episode_id",
+          "status",
+          "spent_cost",
+          "progress_json",
+          "error_summary"
+        ],
+        "title": "BookEpisodeJobMiniOut"
+      },
+      "BookRenderJobCreateIn": {
+        "properties": {
+          "episode_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Episode Ids"
+          },
+          "budget_limit": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Limit"
+          },
+          "run_inline": {
+            "type": "boolean",
+            "title": "Run Inline",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "BookRenderJobCreateIn"
+      },
+      "BookRenderJobOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "novel_id": {
+            "type": "string",
+            "title": "Novel Id"
+          },
+          "plan_id": {
+            "type": "string",
+            "title": "Plan Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "episode_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Episode Ids"
+          },
+          "budget_limit": {
+            "type": "number",
+            "title": "Budget Limit"
+          },
+          "spent_cost": {
+            "type": "number",
+            "title": "Spent Cost"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "progress_json": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Progress Json"
+          },
+          "error_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Summary"
+          },
+          "episode_jobs": {
+            "items": {
+              "$ref": "#/components/schemas/BookEpisodeJobMiniOut"
+            },
+            "type": "array",
+            "title": "Episode Jobs"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "novel_id",
+          "plan_id",
+          "status",
+          "episode_ids",
+          "budget_limit",
+          "spent_cost",
+          "currency",
+          "progress_json",
+          "error_summary",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "BookRenderJobOut"
       },
       "ChapterDetailOut": {
         "properties": {
@@ -7209,6 +9932,11 @@
             "type": "string",
             "title": "Checksum"
           },
+          "is_mock": {
+            "type": "boolean",
+            "title": "Is Mock",
+            "default": false
+          },
           "stream_url": {
             "anyOf": [
               {
@@ -7560,6 +10288,64 @@
           "updated_at"
         ],
         "title": "EpisodePlanWithEpisodesOut"
+      },
+      "EpisodeReadinessOut": {
+        "properties": {
+          "episode_id": {
+            "type": "string",
+            "title": "Episode Id"
+          },
+          "episode_no": {
+            "type": "integer",
+            "title": "Episode No"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "active_segments": {
+            "type": "integer",
+            "title": "Active Segments"
+          },
+          "ready_segments": {
+            "type": "integer",
+            "title": "Ready Segments"
+          },
+          "stale_segments": {
+            "type": "integer",
+            "title": "Stale Segments"
+          },
+          "missing_segments": {
+            "type": "integer",
+            "title": "Missing Segments"
+          },
+          "unresolved_segments": {
+            "type": "integer",
+            "title": "Unresolved Segments"
+          },
+          "remaining_chars": {
+            "type": "integer",
+            "title": "Remaining Chars"
+          },
+          "ready_for_export": {
+            "type": "boolean",
+            "title": "Ready For Export"
+          }
+        },
+        "type": "object",
+        "required": [
+          "episode_id",
+          "episode_no",
+          "title",
+          "active_segments",
+          "ready_segments",
+          "stale_segments",
+          "missing_segments",
+          "unresolved_segments",
+          "remaining_chars",
+          "ready_for_export"
+        ],
+        "title": "EpisodeReadinessOut"
       },
       "EpisodeUpdateIn": {
         "properties": {
@@ -8414,6 +11200,38 @@
         ],
         "title": "JobOut"
       },
+      "MediaTokenOut": {
+        "properties": {
+          "media_token": {
+            "type": "string",
+            "title": "Media Token"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "media_token",
+          "expires_at"
+        ],
+        "title": "MediaTokenOut"
+      },
+      "MediaTokenRequestIn": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Path"
+          }
+        },
+        "type": "object",
+        "required": [
+          "path"
+        ],
+        "title": "MediaTokenRequestIn"
+      },
       "MentionOut": {
         "properties": {
           "id": {
@@ -8485,6 +11303,68 @@
           "confidence"
         ],
         "title": "MentionOut"
+      },
+      "NovelAudioReadinessOut": {
+        "properties": {
+          "novel_id": {
+            "type": "string",
+            "title": "Novel Id"
+          },
+          "plan_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Id"
+          },
+          "ready_for_export": {
+            "type": "boolean",
+            "title": "Ready For Export"
+          },
+          "total_episodes": {
+            "type": "integer",
+            "title": "Total Episodes"
+          },
+          "ready_episodes": {
+            "type": "integer",
+            "title": "Ready Episodes"
+          },
+          "remaining_chars": {
+            "type": "integer",
+            "title": "Remaining Chars"
+          },
+          "estimated_remaining_cost": {
+            "type": "number",
+            "title": "Estimated Remaining Cost"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "episodes": {
+            "items": {
+              "$ref": "#/components/schemas/EpisodeReadinessOut"
+            },
+            "type": "array",
+            "title": "Episodes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "novel_id",
+          "plan_id",
+          "ready_for_export",
+          "total_episodes",
+          "ready_episodes",
+          "remaining_chars",
+          "estimated_remaining_cost",
+          "currency"
+        ],
+        "title": "NovelAudioReadinessOut"
       },
       "NovelOut": {
         "properties": {
@@ -8593,6 +11473,34 @@
           "updated_at"
         ],
         "title": "NovelOut"
+      },
+      "OverLimitSegmentOut": {
+        "properties": {
+          "segment_id": {
+            "type": "string",
+            "title": "Segment Id"
+          },
+          "order_no": {
+            "type": "integer",
+            "title": "Order No"
+          },
+          "char_count": {
+            "type": "integer",
+            "title": "Char Count"
+          },
+          "planned_units": {
+            "type": "integer",
+            "title": "Planned Units"
+          }
+        },
+        "type": "object",
+        "required": [
+          "segment_id",
+          "order_no",
+          "char_count",
+          "planned_units"
+        ],
+        "title": "OverLimitSegmentOut"
       },
       "PaginatedResponse_ChapterSummaryOut_": {
         "properties": {
@@ -8794,6 +11702,16 @@
             "type": "string",
             "title": "Operation"
           },
+          "currency": {
+            "type": "string",
+            "title": "Currency",
+            "default": "CNY"
+          },
+          "cost_kind": {
+            "type": "string",
+            "title": "Cost Kind",
+            "default": "estimated"
+          },
           "call_count": {
             "type": "integer",
             "title": "Call Count"
@@ -8802,9 +11720,19 @@
             "type": "integer",
             "title": "Input Chars"
           },
+          "billed_characters": {
+            "type": "integer",
+            "title": "Billed Characters",
+            "default": 0
+          },
           "audio_duration_ms": {
             "type": "integer",
             "title": "Audio Duration Ms"
+          },
+          "estimated_cost": {
+            "type": "number",
+            "title": "Estimated Cost",
+            "default": 0.0
           },
           "actual_cost": {
             "type": "number",
@@ -8829,13 +11757,28 @@
             "type": "string",
             "title": "Novel Id"
           },
+          "currency": {
+            "type": "string",
+            "title": "Currency",
+            "default": "CNY"
+          },
           "total_input_chars": {
             "type": "integer",
             "title": "Total Input Chars"
           },
+          "total_billed_characters": {
+            "type": "integer",
+            "title": "Total Billed Characters",
+            "default": 0
+          },
           "total_audio_duration_ms": {
             "type": "integer",
             "title": "Total Audio Duration Ms"
+          },
+          "total_estimated_cost": {
+            "type": "number",
+            "title": "Total Estimated Cost",
+            "default": 0.0
           },
           "total_actual_cost": {
             "type": "number",
@@ -9010,6 +11953,17 @@
             "type": "string",
             "title": "Episode Id"
           },
+          "book_render_job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Book Render Job Id"
+          },
           "status": {
             "type": "string",
             "title": "Status"
@@ -9046,6 +12000,28 @@
               }
             ],
             "title": "Idempotency Key"
+          },
+          "cancel_requested": {
+            "type": "boolean",
+            "title": "Cancel Requested",
+            "default": false
+          },
+          "paused_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paused At"
+          },
+          "resume_cursor": {
+            "type": "integer",
+            "title": "Resume Cursor",
+            "default": 0
           },
           "error_summary": {
             "anyOf": [
@@ -9234,6 +12210,17 @@
             "type": "string",
             "title": "Text Hash"
           },
+          "stable_span_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stable Span Key"
+          },
           "segment_type": {
             "type": "string",
             "title": "Segment Type"
@@ -9305,6 +12292,11 @@
           "manual_override": {
             "type": "boolean",
             "title": "Manual Override"
+          },
+          "is_render_blocked": {
+            "type": "boolean",
+            "title": "Is Render Blocked",
+            "default": false
           },
           "revision": {
             "type": "integer",
@@ -9455,6 +12447,67 @@
         },
         "type": "object",
         "title": "ScriptSegmentUpdateIn"
+      },
+      "ScriptValidationOut": {
+        "properties": {
+          "episode_id": {
+            "type": "string",
+            "title": "Episode Id"
+          },
+          "total_segments": {
+            "type": "integer",
+            "title": "Total Segments"
+          },
+          "active_segments": {
+            "type": "integer",
+            "title": "Active Segments"
+          },
+          "unresolved_segments": {
+            "items": {
+              "$ref": "#/components/schemas/UnresolvedSegmentOut"
+            },
+            "type": "array",
+            "title": "Unresolved Segments"
+          },
+          "missing_voices": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Voices"
+          },
+          "over_limit_segments": {
+            "items": {
+              "$ref": "#/components/schemas/OverLimitSegmentOut"
+            },
+            "type": "array",
+            "title": "Over Limit Segments"
+          },
+          "text_coverage_valid": {
+            "type": "boolean",
+            "title": "Text Coverage Valid"
+          },
+          "coverage_errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Coverage Errors"
+          },
+          "ready_to_render": {
+            "type": "boolean",
+            "title": "Ready To Render"
+          }
+        },
+        "type": "object",
+        "required": [
+          "episode_id",
+          "total_segments",
+          "active_segments",
+          "text_coverage_valid",
+          "ready_to_render"
+        ],
+        "title": "ScriptValidationOut"
       },
       "SegmentCandidateOut": {
         "properties": {
@@ -9609,6 +12662,44 @@
         ],
         "title": "StageUsageOut"
       },
+      "UnresolvedSegmentOut": {
+        "properties": {
+          "segment_id": {
+            "type": "string",
+            "title": "Segment Id"
+          },
+          "order_no": {
+            "type": "integer",
+            "title": "Order No"
+          },
+          "segment_type": {
+            "type": "string",
+            "title": "Segment Type"
+          },
+          "review_status": {
+            "type": "string",
+            "title": "Review Status"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "text_preview": {
+            "type": "string",
+            "title": "Text Preview"
+          }
+        },
+        "type": "object",
+        "required": [
+          "segment_id",
+          "order_no",
+          "segment_type",
+          "review_status",
+          "reason",
+          "text_preview"
+        ],
+        "title": "UnresolvedSegmentOut"
+      },
       "UsageSummaryOut": {
         "properties": {
           "novel_id": {
@@ -9760,9 +12851,19 @@
             "type": "integer",
             "title": "Impacted Chars"
           },
+          "invalidated_audio_segments": {
+            "type": "integer",
+            "title": "Invalidated Audio Segments",
+            "default": 0
+          },
           "estimated_rerender_cost": {
             "type": "number",
             "title": "Estimated Rerender Cost"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency",
+            "default": "CNY"
           }
         },
         "type": "object",
@@ -9972,6 +13073,27 @@
             "type": "integer",
             "title": "Profile Version"
           },
+          "prompt_version": {
+            "type": "integer",
+            "title": "Prompt Version",
+            "default": 1
+          },
+          "provider_status": {
+            "type": "string",
+            "title": "Provider Status",
+            "default": "OK"
+          },
+          "preview_checksum": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preview Checksum"
+          },
           "approval_status": {
             "type": "string",
             "title": "Approval Status"
@@ -10089,6 +13211,17 @@
             ],
             "title": "Voice Id"
           },
+          "target_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Model"
+          },
           "default_rate": {
             "anyOf": [
               {
@@ -10136,10 +13269,67 @@
               }
             ],
             "title": "Consent Note"
+          },
+          "scope": {
+            "type": "string",
+            "pattern": "^(unrendered_only|current_episode|all_episodes)$",
+            "title": "Scope",
+            "default": "all_episodes"
+          },
+          "episode_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Episode Id"
           }
         },
         "type": "object",
         "title": "VoiceProfileUpdateIn"
+      },
+      "VoiceProviderStatusOut": {
+        "properties": {
+          "profile_id": {
+            "type": "string",
+            "title": "Profile Id"
+          },
+          "voice_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Id"
+          },
+          "provider_status": {
+            "type": "string",
+            "title": "Provider Status"
+          },
+          "target_model": {
+            "type": "string",
+            "title": "Target Model"
+          },
+          "is_mock": {
+            "type": "boolean",
+            "title": "Is Mock"
+          }
+        },
+        "type": "object",
+        "required": [
+          "profile_id",
+          "voice_id",
+          "provider_status",
+          "target_model",
+          "is_mock"
+        ],
+        "title": "VoiceProviderStatusOut"
       }
     }
   }

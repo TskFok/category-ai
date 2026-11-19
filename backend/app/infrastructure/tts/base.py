@@ -36,6 +36,10 @@ class SynthesisResult:
     actual_cost: float
     latency_ms: int
     attempts: int = 1
+    billed_characters: int | None = None
+    currency: str = "CNY"
+    cost_kind: str = "estimated"  # "estimated" | "billed"
+    is_mock: bool = False
 
 
 @dataclass(frozen=True)
@@ -48,10 +52,14 @@ class VoiceDesignResult:
     provider: str
     model: str
     latency_ms: int
+    provider_status: str = "OK"
+    prefix: str = ""
+    is_mock: bool = False
 
 
 class TTSProvider(ABC):
     provider_name: str = "base"
+    is_mock: bool = False
 
     @abstractmethod
     def synthesize(self, req: SynthesisRequest) -> SynthesisResult:
@@ -64,5 +72,11 @@ class TTSProvider(ABC):
         voice_prompt: str,
         preview_text: str,
         language: str = "zh-CN",
+        prefix: str | None = None,
     ) -> VoiceDesignResult:
         """Create a reusable voice_id from a voice design prompt and return preview audio."""
+
+    def query_voice_status(self, voice_id: str) -> str:
+        """Query the deployment status (DEPLOYING / OK / UNDEPLOYED / UNKNOWN) of a designed voice."""
+        _ = voice_id
+        return "OK"

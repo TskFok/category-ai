@@ -460,6 +460,7 @@ class CurrentAudioMiniOut(BaseModel):
     duration_ms: int
     audio_format: str
     checksum: str
+    is_mock: bool = False
     stream_url: str | None
 
 
@@ -473,6 +474,7 @@ class ScriptSegmentOut(BaseModel):
     end_offset: int
     text_content: str
     text_hash: str
+    stable_span_key: str | None = None
     segment_type: str
     speaker_character_id: str | None
     speaker_name: str | None = None
@@ -484,9 +486,38 @@ class ScriptSegmentOut(BaseModel):
     speech_rate: float
     review_status: str
     manual_override: bool
+    is_render_blocked: bool = False
     revision: int
     candidates: list[SegmentCandidateOut] = Field(default_factory=list)
     current_audio: CurrentAudioMiniOut | None = None
+
+
+class UnresolvedSegmentOut(BaseModel):
+    segment_id: str
+    order_no: int
+    segment_type: str
+    review_status: str
+    reason: str
+    text_preview: str
+
+
+class OverLimitSegmentOut(BaseModel):
+    segment_id: str
+    order_no: int
+    char_count: int
+    planned_units: int
+
+
+class ScriptValidationOut(BaseModel):
+    episode_id: str
+    total_segments: int
+    active_segments: int
+    unresolved_segments: list[UnresolvedSegmentOut] = Field(default_factory=list)
+    missing_voices: list[str] = Field(default_factory=list)
+    over_limit_segments: list[OverLimitSegmentOut] = Field(default_factory=list)
+    text_coverage_valid: bool
+    coverage_errors: list[str] = Field(default_factory=list)
+    ready_to_render: bool
 
 
 class ScriptSegmentUpdateIn(BaseModel):
@@ -532,10 +563,13 @@ class VoiceProfileUpdateIn(BaseModel):
     display_name: str | None = None
     voice_prompt: str | None = None
     voice_id: str | None = None
+    target_model: str | None = None
     default_rate: float | None = Field(default=None, ge=0.5, le=2.0)
     pitch: float | None = Field(default=None, ge=0.5, le=2.0)
     consent_confirmed: bool | None = None
     consent_note: str | None = None
+    scope: str = Field(default="all_episodes", pattern="^(unrendered_only|current_episode|all_episodes)$")
+    episode_id: str | None = None
 
 
 class VoiceDesignIn(BaseModel):
@@ -567,6 +601,9 @@ class VoiceProfileOut(BaseModel):
     pitch: float
     seed: int | None
     profile_version: int
+    prompt_version: int = 1
+    provider_status: str = "OK"
+    preview_checksum: str | None = None
     approval_status: str
     is_active: bool
     locked_at: datetime | None
@@ -581,10 +618,20 @@ class VoiceLockResultOut(BaseModel):
     profile: VoiceProfileOut
     impacted_segments: int
     impacted_chars: int
+    invalidated_audio_segments: int = 0
     estimated_rerender_cost: float
+    currency: str = "CNY"
 
 
-# --- M3: Render Jobs, Audio Segments & Audio Exports ---
+class VoiceProviderStatusOut(BaseModel):
+    profile_id: str
+    voice_id: str | None
+    provider_status: str
+    target_model: str
+    is_mock: bool
+
+
+# --- M3/M4: Render Jobs, Book Render Jobs, Audio Segments & Audio Exports ---
 class RenderJobCreateIn(BaseModel):
     budget_limit: float | None = Field(default=None, ge=0.0)
     idempotency_key: str | None = None
@@ -597,6 +644,7 @@ class RenderJobOut(BaseModel):
     id: str
     novel_id: str
     episode_id: str
+    book_render_job_id: str | None = None
     status: str
     budget_limit: float
     spent_cost: float
@@ -604,9 +652,68 @@ class RenderJobOut(BaseModel):
     profile_snapshot_json: dict[str, Any]
     progress_json: dict[str, Any]
     idempotency_key: str | None
+    cancel_requested: bool = False
+    paused_at: datetime | None = None
+    resume_cursor: int = 0
     error_summary: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class BookRenderJobCreateIn(BaseModel):
+    episode_ids: list[str] | None = None
+    budget_limit: float | None = Field(default=None, ge=0.0)
+    run_inline: bool = False
+
+
+class BookEpisodeJobMiniOut(BaseModel):
+    id: str
+    episode_id: str
+    status: str
+    spent_cost: float
+    progress_json: dict[str, Any]
+    error_summary: str | None
+
+
+class BookRenderJobOut(BaseModel):
+    id: str
+    novel_id: str
+    plan_id: str
+    status: str
+    episode_ids: list[str]
+    budget_limit: float
+    spent_cost: float
+    currency: str
+    progress_json: dict[str, Any]
+    error_summary: str | None
+    episode_jobs: list[BookEpisodeJobMiniOut] = Field(default_factory=list)
+    created_at: datetime
+    updated_at: datetime
+
+
+class EpisodeReadinessOut(BaseModel):
+    episode_id: str
+    episode_no: int
+    title: str
+    active_segments: int
+    ready_segments: int
+    stale_segments: int
+    missing_segments: int
+    unresolved_segments: int
+    remaining_chars: int
+    ready_for_export: bool
+
+
+class NovelAudioReadinessOut(BaseModel):
+    novel_id: str
+    plan_id: str | None
+    ready_for_export: bool
+    total_episodes: int
+    ready_episodes: int
+    remaining_chars: int
+    estimated_remaining_cost: float
+    currency: str
+    episodes: list[EpisodeReadinessOut] = Field(default_factory=list)
 
 
 class AudioSegmentOut(BaseModel):
@@ -619,13 +726,19 @@ class AudioSegmentOut(BaseModel):
     render_job_id: str | None
     voice_profile_id: str | None
     voice_profile_version: int
+    script_revision: int = 1
     voice_id: str
     audio_format: str
+    sample_rate: int = 24000
+    channels: int = 1
     duration_ms: int
     file_size_bytes: int
     checksum: str
     cache_key: str
     is_current: bool
+    is_mock: bool = False
+    provider: str = "cosyvoice"
+    model: str = "cosyvoice-v3.5-flash"
     status: str
     error_message: str | None
     created_at: datetime
@@ -635,6 +748,7 @@ class AudioExportCreateIn(BaseModel):
     episode_id: str | None = None
     plan_id: str | None = None
     format: str = Field(default="mp3", pattern="^(mp3|wav|zip)$")
+    allow_wav_fallback: bool = False
 
 
 class AudioExportOut(BaseModel):
@@ -643,10 +757,16 @@ class AudioExportOut(BaseModel):
     id: str
     novel_id: str
     episode_id: str | None
+    plan_id: str | None = None
     format: str
+    actual_format: str = ""
     status: str
     file_size_bytes: int
     duration_ms: int
+    checksum: str = ""
+    source_snapshot_hash: str = ""
+    is_stale: bool = False
+    is_mock: bool = False
     error_message: str | None
     download_url: str
     created_at: datetime
@@ -656,15 +776,31 @@ class ProviderOperationUsageOut(BaseModel):
     provider: str
     model: str
     operation: str
+    currency: str = "CNY"
+    cost_kind: str = "estimated"
     call_count: int
     input_chars: int
+    billed_characters: int = 0
     audio_duration_ms: int
+    estimated_cost: float = 0.0
     actual_cost: float
 
 
 class ProviderUsageSummaryOut(BaseModel):
     novel_id: str
+    currency: str = "CNY"
     total_input_chars: int
+    total_billed_characters: int = 0
     total_audio_duration_ms: int
+    total_estimated_cost: float = 0.0
     total_actual_cost: float
     by_operation: list[ProviderOperationUsageOut]
+
+
+class MediaTokenRequestIn(BaseModel):
+    path: str = Field(..., min_length=1)
+
+
+class MediaTokenOut(BaseModel):
+    media_token: str
+    expires_at: int

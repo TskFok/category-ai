@@ -12,6 +12,7 @@ from app.api.schemas import (
     VoiceProfileCreateIn,
     VoiceProfileOut,
     VoiceProfileUpdateIn,
+    VoiceProviderStatusOut,
 )
 from app.application import voice_service
 from app.core.config import Settings, get_settings
@@ -94,24 +95,64 @@ def lock_voice_profile(
     )
 
 
+@router.post("/voice-profiles/{profile_id}/update-and-invalidate", response_model=VoiceLockResultOut)
+def update_voice_and_invalidate(
+    profile_id: str,
+    body: VoiceProfileUpdateIn,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+    _principal: Principal = Depends(require_roles(UserRole.ADMIN, UserRole.REVIEWER)),
+):
+    return voice_service.update_voice_assignment(
+        db,
+        settings,
+        profile_id=profile_id,
+        display_name=body.display_name,
+        voice_prompt=body.voice_prompt,
+        voice_id=body.voice_id,
+        target_model=body.target_model,
+        default_rate=body.default_rate,
+        pitch=body.pitch,
+        consent_confirmed=body.consent_confirmed,
+        consent_note=body.consent_note,
+        lock=False,
+        scope=body.scope,
+        episode_id=body.episode_id,
+    )
+
+
 @router.patch("/voice-profiles/{profile_id}", response_model=VoiceProfileOut)
 def update_voice_profile(
     profile_id: str,
     body: VoiceProfileUpdateIn,
     db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
     _principal: Principal = Depends(require_roles(UserRole.ADMIN, UserRole.REVIEWER)),
 ):
     return voice_service.update_voice_profile(
         db,
+        settings,
         profile_id=profile_id,
         display_name=body.display_name,
         voice_prompt=body.voice_prompt,
         voice_id=body.voice_id,
+        target_model=body.target_model,
         default_rate=body.default_rate,
         pitch=body.pitch,
         consent_confirmed=body.consent_confirmed,
         consent_note=body.consent_note,
+        scope=body.scope,
     )
+
+
+@router.get("/voice-profiles/{profile_id}/provider-status", response_model=VoiceProviderStatusOut)
+def get_voice_provider_status(
+    profile_id: str,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+    _principal: Principal = Depends(require_roles(UserRole.ADMIN, UserRole.REVIEWER, UserRole.READER)),
+):
+    return voice_service.sync_voice_provider_status(db, settings, profile_id)
 
 
 @router.get("/voice-profiles/{profile_id}/preview")

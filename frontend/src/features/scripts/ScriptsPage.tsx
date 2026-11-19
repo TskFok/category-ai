@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Alert,
   Button,
   Card,
   Empty,
@@ -11,9 +12,9 @@ import {
   Tag,
   Typography,
 } from "antd";
-import { ThunderboltOutlined } from "@ant-design/icons";
+import { CheckCircleOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import { api } from "../../shared/api/client";
-import type { ScriptSegment } from "../../shared/types/api";
+import type { ScriptSegment, ScriptValidation } from "../../shared/types/api";
 
 interface Props {
   novelId: string | null;
@@ -35,6 +36,7 @@ export function ScriptsPage({ novelId, initialEpisodeId }: Props) {
   const qc = useQueryClient();
   const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(initialEpisodeId || null);
   const [reviewFilter, setReviewFilter] = useState<string | undefined>(undefined);
+  const [validation, setValidation] = useState<ScriptValidation | null>(null);
 
   const plansQuery = useQuery({
     queryKey: ["episode-plans", novelId],
@@ -66,8 +68,24 @@ export function ScriptsPage({ novelId, initialEpisodeId }: Props) {
   const analyzeMut = useMutation({
     mutationFn: () => api.analyzeEpisodeScript(activeEpisodeId!),
     onSuccess: (segs) => {
-      message.success(`剧本标注完成，共 ${segs.length} 段`);
+      message.success(`剧本标注完成，共 ${segs.length} 段（已保留原有稳定 ID 与人工修改）`);
+      setValidation(null);
       qc.invalidateQueries({ queryKey: ["script-segments", activeEpisodeId] });
+    },
+    onError: (e: Error) => message.error(e.message),
+  });
+
+  const validateMut = useMutation({
+    mutationFn: () => api.validateEpisodeScript(activeEpisodeId!),
+    onSuccess: (res) => {
+      setValidation(res);
+      if (res.ready_to_render) {
+        message.success("剧本校验通过，可直接进入音频合成");
+      } else {
+        message.warning(
+          `发现 ${res.unresolved_segments.length} 条未确认说话人，${res.missing_voices.length} 个缺失音色`
+        );
+      }
     },
     onError: (e: Error) => message.error(e.message),
   });
@@ -136,7 +154,32 @@ export function ScriptsPage({ novelId, initialEpisodeId }: Props) {
           >
             DeepSeek 标注配音剧本
           </Button>
+          <Button
+            icon={<CheckCircleOutlined />}
+            disabled={!activeEpisodeId}
+            loading={validateMut.isPending}
+            onClick={() => validateMut.mutate()}
+          >
+            渲染前剧本校验
+          </Button>
         </Space>
+        {validation && (
+          <Alert
+            style={{ marginTop: 12 }}
+            type={validation.ready_to_render ? "success" : "warning"}
+            showIcon
+            message={
+              validation.ready_to_render
+                ? `校验通过：${validation.active_segments} 个有效片段均已归属说话人且锁定音色`
+                : `渲染受阻：未确认说话人 ${validation.unresolved_segments.length} 段，缺失音色 ${validation.missing_voices.length} 个`
+            }
+            description={
+              validation.unresolved_segments.length > 0
+                ? `阻塞段序号：${validation.unresolved_segments.map((u) => `#${u.order_no}`).join(", ")}`
+                : undefined
+            }
+          />
+        )}
       </Card>
 
       <Card title={`剧本片段 (${segmentsQuery.data?.length ?? 0} 段)`}>

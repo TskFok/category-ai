@@ -74,55 +74,58 @@ def create_episode_plan(
         max_deviation_pct=max_deviation_pct,
     )
 
-    # Optionally enrich episode titles & rationales with DeepSeek without altering text/offsets
+    # P1-04: Enrich episode titles & rationales in batches across ALL episodes (no 60-episode cap)
     title_overrides: dict[int, tuple[str, str]] = {}
     if use_llm_titles and planned:
-        try:
-            llm = DeepSeekClient(settings)
-            spec = load_prompt("episode_planning")
-            summary_payload = [
-                {
-                    "episode_no": p.episode_no,
-                    "char_count": p.char_count,
-                    "estimated_minutes": round(p.estimated_seconds / 60.0, 1),
-                    "default_title": p.title,
-                    "default_rationale": p.rationale,
-                }
-                for p in planned[:60]
-            ]
-            resp = llm.chat_json(
-                system_prompt=spec.system_prompt,
-                user_prompt=spec.user_template.format(
-                    novel_title=novel.title,
-                    target_minutes=eff_target_min,
-                    episodes_summary_json=json.dumps(summary_payload, ensure_ascii=False),
-                ),
-                tier=spec.model_tier,
-                temperature=spec.temperature,
-                max_tokens=spec.max_tokens,
-                task_hint="episode_planning",
-            )
-            db.add(
-                LLMCall(
-                    novel_id=novel.id,
-                    stage="EPISODE_PLANNING",
-                    model=resp.model,
-                    prompt_version=spec.version,
-                    input_tokens=resp.input_tokens,
-                    output_tokens=resp.output_tokens,
-                    estimated_cost=resp.estimated_cost,
-                    latency_ms=resp.latency_ms,
-                    status="ok",
+        llm = DeepSeekClient(settings)
+        spec = load_prompt("episode_planning")
+        batch_size = 40
+        for start_i in range(0, len(planned), batch_size):
+            batch_planned = planned[start_i : start_i + batch_size]
+            try:
+                summary_payload = [
+                    {
+                        "episode_no": p.episode_no,
+                        "char_count": p.char_count,
+                        "estimated_minutes": round(p.estimated_seconds / 60.0, 1),
+                        "default_title": p.title,
+                        "default_rationale": p.rationale,
+                    }
+                    for p in batch_planned
+                ]
+                resp = llm.chat_json(
+                    system_prompt=spec.system_prompt,
+                    user_prompt=spec.user_template.format(
+                        novel_title=novel.title,
+                        target_minutes=eff_target_min,
+                        episodes_summary_json=json.dumps(summary_payload, ensure_ascii=False),
+                    ),
+                    tier=spec.model_tier,
+                    temperature=spec.temperature,
+                    max_tokens=spec.max_tokens,
+                    task_hint="episode_planning",
                 )
-            )
-            for item in resp.data.get("episodes", []):
-                ep_no = item.get("episode_no")
-                t = (item.get("title") or "").strip()
-                r = (item.get("rationale") or "").strip()
-                if isinstance(ep_no, int) and t:
-                    title_overrides[ep_no] = (t[:255], r)
-        except LLMClientError as exc:
-            logger.warning("Episode title refinement skipped due to LLM error: %s", exc)
+                db.add(
+                    LLMCall(
+                        novel_id=novel.id,
+                        stage="EPISODE_PLANNING",
+                        model=resp.model,
+                        prompt_version=spec.version,
+                        input_tokens=resp.input_tokens,
+                        output_tokens=resp.output_tokens,
+                        estimated_cost=resp.estimated_cost,
+                        latency_ms=resp.latency_ms,
+                        status="ok",
+                    )
+                )
+                for item in resp.data.get("episodes", []):
+                    ep_no = item.get("episode_no")
+                    t = (item.get("title") or "").strip()
+                    r = (item.get("rationale") or "").strip()
+                    if isinstance(ep_no, int) and t:
+                        title_overrides[ep_no] = (t[:255], r)
+            except LLMClientError as exc:
+                logger.warning("Episode title refinement batch %d failed: %s", start_i, exc)
 
     max_ver = (
         db.scalar(
@@ -303,6 +306,19 @@ def update_episode(
         ep.paragraph_count = para_count
         ep.estimated_seconds = est_sec
         ep.text_hash = text_hash
+
+        # Mark existing audio segments and exports for this episode as stale
+        for aud in db.scalars(
+            select(AudioSegment).where(
+                AudioSegment.episode_id == ep.id,
+                AudioSegment.is_current.is_(True),
+            )
+        ).all():
+            aud.status = AudioSegmentStatus.STALE.value
+        for exp in db.scalars(
+            select(AudioExport).where(AudioExport.episode_id == ep.id)
+        ).all():
+            exp.is_stale = True
 
     db.commit()
     if boundary_changed:

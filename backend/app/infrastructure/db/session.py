@@ -1,7 +1,7 @@
 from collections.abc import Generator
 from pathlib import Path
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.core.config import get_settings
@@ -21,7 +21,14 @@ def _build_engine():
             db_path = Path(url.split("///", 1)[1])
             db_path.parent.mkdir(parents=True, exist_ok=True)
         connect_args = {"check_same_thread": False}
-    return create_engine(url, pool_pre_ping=True, connect_args=connect_args)
+    eng = create_engine(url, pool_pre_ping=True, connect_args=connect_args)
+    if url.startswith("sqlite"):
+        @event.listens_for(eng, "connect")
+        def _set_sqlite_pragma(dbapi_conn, _connection_record):
+            cursor = dbapi_conn.cursor()
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.close()
+    return eng
 
 
 engine = _build_engine()

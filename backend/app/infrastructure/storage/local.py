@@ -84,6 +84,13 @@ class LocalStorage:
         target.write_bytes(data)
         return rel, len(data)
 
+    def prepare_audio_path(self, rel_path: str) -> tuple[str, Path]:
+        """Return (rel_ref, absolute_path) with parent directories created for streaming disk writes."""
+        rel = f"audio/{rel_path.lstrip('/')}"
+        target = self._safe_resolve(rel)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        return rel, target
+
     def get_audio_path(self, rel_path: str) -> Path:
         target = self._safe_resolve(rel_path)
         if not target.exists():

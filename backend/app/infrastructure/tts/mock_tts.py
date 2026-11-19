@@ -25,16 +25,17 @@ def generate_pcm_wav_bytes(
     frequency_hz: float = 330.0,
     sample_rate: int = 24000,
     amplitude: float = 0.18,
+    channels: int = 1,
 ) -> bytes:
     """
-    Generate valid 16-bit mono PCM WAV audio bytes with gentle fade-in/out.
+    Generate valid 16-bit PCM WAV audio bytes with gentle fade-in/out.
     Produces real playable audio in browsers and passes WAV integrity checks.
     """
     num_frames = max(1, int(sample_rate * (duration_ms / 1000.0)))
     fade_frames = min(num_frames // 8, int(sample_rate * 0.02))
     buf = io.BytesIO()
     with wave.open(buf, "wb") as wf:
-        wf.setnchannels(1)
+        wf.setnchannels(channels)
         wf.setsampwidth(2)
         wf.setframerate(sample_rate)
         frames = bytearray()
@@ -47,7 +48,8 @@ def generate_pcm_wav_bytes(
                 elif i > num_frames - fade_frames:
                     env = (num_frames - i) / fade_frames
             sample = int(32767 * amplitude * env * math.sin(two_pi_f * i))
-            frames += struct.pack("<h", sample)
+            packed = struct.pack("<h", sample)
+            frames += packed * channels
         wf.writeframes(bytes(frames))
     return buf.getvalue()
 
@@ -65,6 +67,7 @@ class MockTTSProvider(TTSProvider):
     """
 
     provider_name = "cosyvoice_mock"
+    is_mock = True
 
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
@@ -76,8 +79,13 @@ class MockTTSProvider(TTSProvider):
             raise TTSProviderError("EMPTY_TEXT", "Synthesis text must not be empty")
         if not req.voice_id:
             raise TTSProviderError("MISSING_VOICE_ID", "voice_id is required for synthesis")
+        if len(text) > self.settings.tts_max_chars_per_request:
+            raise TTSProviderError(
+                "TEXT_TOO_LONG",
+                f"Text length {len(text)} exceeds limit {self.settings.tts_max_chars_per_request}",
+            )
 
-        # Keep duration realistic yet fast for tests (150ms per 5 chars, clamped 250ms..2500ms)
+        # Keep duration realistic yet fast for tests (clamped 250ms..2500ms)
         base_ms = max(250, min(2500, int((len(text) / max(0.5, req.rate)) * 45)))
         freq = _voice_frequency(req.voice_id, req.pitch)
         wav_bytes = generate_pcm_wav_bytes(
@@ -99,6 +107,10 @@ class MockTTSProvider(TTSProvider):
             actual_cost=cost,
             latency_ms=latency_ms,
             attempts=1,
+            billed_characters=None,
+            currency=self.settings.tts_currency,
+            cost_kind="estimated",
+            is_mock=True,
         )
 
     def design_voice(
@@ -107,6 +119,7 @@ class MockTTSProvider(TTSProvider):
         voice_prompt: str,
         preview_text: str,
         language: str = "zh-CN",
+        prefix: str | None = None,
     ) -> VoiceDesignResult:
         t0 = time.monotonic()
         prompt = (voice_prompt or "").strip()
@@ -114,6 +127,7 @@ class MockTTSProvider(TTSProvider):
             raise TTSProviderError("EMPTY_VOICE_PROMPT", "voice_prompt must not be empty")
 
         digest = hashlib.sha256(f"{language}:{prompt}".encode("utf-8")).hexdigest()[:12]
+        eff_prefix = (prefix or f"cv{digest[:8]}")[:10]
         voice_id = f"cv35-mock-{digest}"
         sample_ms = 800
         wav_bytes = generate_pcm_wav_bytes(
@@ -131,4 +145,11 @@ class MockTTSProvider(TTSProvider):
             provider=self.provider_name,
             model=self.settings.cosyvoice_model,
             latency_ms=latency_ms,
+            provider_status="OK",
+            prefix=eff_prefix,
+            is_mock=True,
         )
+
+    def query_voice_status(self, voice_id: str) -> str:
+        _ = voice_id
+        return "OK"

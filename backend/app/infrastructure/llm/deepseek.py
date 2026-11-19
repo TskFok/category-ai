@@ -60,7 +60,13 @@ class DeepSeekClient:
         task_hint: str = "generic",
     ) -> LLMResponse:
         model = self.select_model(tier)
-        if self.settings.deepseek_mock_mode or not self.settings.deepseek_api_key:
+        if self.settings.app_env == "production":
+            if self.settings.deepseek_mock_mode or not (self.settings.deepseek_api_key or "").strip():
+                raise LLMClientError(
+                    "PRODUCTION_MOCK_BLOCKED",
+                    "DEEPSEEK_API_KEY must be configured and DEEPSEEK_MOCK_MODE=false in production",
+                )
+        elif self.settings.deepseek_mock_mode or not (self.settings.deepseek_api_key or "").strip():
             return self._mock_response(model=model, user_prompt=user_prompt, task_hint=task_hint)
 
         url = f"{self.settings.deepseek_base_url.rstrip('/')}/chat/completions"
