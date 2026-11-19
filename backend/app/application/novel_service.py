@@ -15,7 +15,7 @@ from app.domain.text_processing import (
     sha256_bytes,
 )
 from app.infrastructure.db.models import Chapter, Chunk, Novel
-from app.infrastructure.storage.local import LocalStorage, extract_text_from_epub
+from app.infrastructure.storage.local import LocalStorage, extract_text_from_epub_with_meta
 
 
 def ingest_novel_file(
@@ -29,6 +29,8 @@ def ingest_novel_file(
     raw_bytes: bytes,
     chunk_size: int | None = None,
     chunk_overlap: int | None = None,
+    license_scope: str = "private",
+    copyright_confirmed: bool = False,
 ) -> Novel:
     if not raw_bytes:
         raise AppError(code="EMPTY_FILE", message="Uploaded file is empty", status_code=400)
@@ -54,8 +56,9 @@ def ingest_novel_file(
             status_code=400,
         )
 
+    epub_meta: dict[str, object] = {}
     if ext == "epub":
-        raw_text = extract_text_from_epub(raw_bytes)
+        raw_text, epub_meta = extract_text_from_epub_with_meta(raw_bytes)
         encoding = "utf-8"
     else:
         raw_text, encoding = detect_and_decode(raw_bytes)
@@ -68,6 +71,11 @@ def ingest_novel_file(
             status_code=400,
         )
 
+    diag_dict = asdict(diagnostics)
+    if epub_meta:
+        diag_dict.update(epub_meta)
+
+    eff_license = license_scope if license_scope in ("private", "commercial") else "private"
     source_hash = sha256_bytes(raw_bytes)
     novel = Novel(
         title=title.strip() or Path(filename).stem,
@@ -82,7 +90,9 @@ def ingest_novel_file(
         chapter_count=len(parsed_chapters),
         chunk_count=0,
         status="ready",
-        diagnostics_json=asdict(diagnostics),
+        license_scope=eff_license,
+        copyright_confirmed=bool(copyright_confirmed),
+        diagnostics_json=diag_dict,
     )
     db.add(novel)
     db.flush()

@@ -33,6 +33,7 @@ def create_analysis_job(
     budget_limit: float | None = None,
     chapter_from: int | None = None,
     chapter_to: int | None = None,
+    character_ids: list[str] | None = None,
 ) -> Job:
     novel = db.get(Novel, novel_id)
     if not novel:
@@ -83,9 +84,14 @@ def create_analysis_job(
 
     stages_to_seed: list[str]
     if job_type == PipelineStage.FULL_PIPELINE.value:
+        # FIX-03: Persist TaskRuns for every stage in the DAG (S1 -> S6)
         stages_to_seed = [
             PipelineStage.S1_DISCOVER.value,
             PipelineStage.S2_EXTRACT.value,
+            PipelineStage.S3_DISAMBIGUATE.value,
+            PipelineStage.S4_CONSOLIDATE.value,
+            PipelineStage.S5_ANALYZE.value,
+            PipelineStage.S6_PUBLISH.value,
         ]
     elif job_type in (PipelineStage.S1_DISCOVER.value, PipelineStage.S2_EXTRACT.value):
         stages_to_seed = [job_type]
@@ -126,6 +132,31 @@ def create_analysis_job(
                     )
                 )
                 created_count += 1
+        elif st == PipelineStage.S5_ANALYZE.value and character_ids:
+            # FIX-01: Support per-character incremental S5 reruns
+            for cid in character_ids:
+                idem = make_idempotency_key(
+                    novel.id,
+                    novel.source_version,
+                    st,
+                    f"{job.id}:{cid}",
+                    novel.source_hash,
+                    "1.0.0",
+                    settings.deepseek_analysis_model,
+                )
+                db.add(
+                    TaskRun(
+                        novel_id=novel.id,
+                        job_id=job.id,
+                        stage=st,
+                        chunk_id=None,
+                        character_id=cid,
+                        input_hash=novel.source_hash,
+                        idempotency_key=idem,
+                        state=TaskState.PENDING.value,
+                    )
+                )
+                created_count += 1
         else:
             idem = make_idempotency_key(
                 novel.id,
@@ -153,7 +184,9 @@ def create_analysis_job(
         "total_tasks": created_count,
         "completed_tasks": 0,
         "failed_tasks": 0,
+        "skipped_tasks": 0,
         "pending_tasks": created_count,
+        "completion_pct": 0.0,
         "current_stage": stages_to_seed[0] if stages_to_seed else job_type,
     }
     db.commit()
@@ -199,22 +232,31 @@ def pause_job(db: Session, job_id: str) -> Job:
 
 def resume_job(db: Session, job_id: str) -> Job:
     job = get_job(db, job_id)
-    if job.state not in (JobState.PAUSED.value, JobState.FAILED.value, JobState.PENDING.value):
+    if job.state not in (
+        JobState.PAUSED.value,
+        JobState.FAILED.value,
+        JobState.PARTIAL_FAILED.value,
+        JobState.PENDING.value,
+    ):
         raise AppError(
             code="INVALID_JOB_TRANSITION",
             message=f"Cannot resume job in state '{job.state}'",
             status_code=409,
         )
-    # Reset failed tasks to pending so they can be retried
-    failed_runs = db.scalars(
-        select(TaskRun).where(TaskRun.job_id == job.id, TaskRun.state == TaskState.FAILED.value)
+    # Reset failed and skipped downstream tasks to pending so they can be retried
+    retry_runs = db.scalars(
+        select(TaskRun).where(
+            TaskRun.job_id == job.id,
+            TaskRun.state.in_([TaskState.FAILED.value, TaskState.SKIPPED.value]),
+        )
     ).all()
-    for tr in failed_runs:
+    for tr in retry_runs:
         tr.state = TaskState.PENDING.value
         tr.error_code = None
         tr.error_message = None
 
     job.state = JobState.RUNNING.value
+    job.error_summary = None
     db.commit()
     db.refresh(job)
     return job
@@ -226,7 +268,9 @@ def refresh_job_progress(db: Session, job_id: str) -> Job:
     total = len(runs)
     completed = sum(1 for r in runs if r.state == TaskState.COMPLETED.value)
     failed = sum(1 for r in runs if r.state == TaskState.FAILED.value)
+    skipped = sum(1 for r in runs if r.state == TaskState.SKIPPED.value)
     pending = sum(1 for r in runs if r.state in (TaskState.PENDING.value, TaskState.RUNNING.value))
+    pct = round(((completed + failed + skipped) / total) * 100.0, 2) if total > 0 else 100.0
 
     spent = (
         db.scalar(
@@ -242,7 +286,9 @@ def refresh_job_progress(db: Session, job_id: str) -> Job:
         "total_tasks": total,
         "completed_tasks": completed,
         "failed_tasks": failed,
+        "skipped_tasks": skipped,
         "pending_tasks": pending,
+        "completion_pct": pct,
     }
     db.commit()
     db.refresh(job)

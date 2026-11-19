@@ -18,8 +18,10 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     cors_origins: str = "http://localhost:5173,http://localhost:8080"
 
-    # Auth (ADR-07: V1 single admin with role boundary preserved)
+    # Auth (FIX-04: strong token required in production; optional reviewer/reader tokens)
     admin_api_token: str = ""
+    reviewer_api_token: str = ""
+    reader_api_token: str = ""
 
     # Database & Redis
     database_url: str = "sqlite:///./data/ncke_dev.db"
@@ -39,6 +41,10 @@ class Settings(BaseSettings):
     llm_max_retries: int = Field(default=3, ge=0, le=10)
     job_budget_limit: float = Field(default=50.0, ge=0.0)
 
+    # S5 character analysis coverage (FIX-01)
+    s5_deep_analysis_top_n: int = Field(default=10, ge=1, le=500)
+    s5_analyze_all_characters: bool = True
+
     # Pricing per 1M tokens (USD)
     price_extract_input_per_1m: float = 0.14
     price_extract_output_per_1m: float = 0.28
@@ -47,11 +53,36 @@ class Settings(BaseSettings):
 
     # Storage & upload limits
     storage_root: str = "./data/storage"
+    audio_storage_root: str = ""
     max_upload_bytes: int = 52_428_800  # 50 MiB
 
     # Chunking defaults (Section 7.1)
     default_chunk_size: int = 4500
     default_chunk_overlap: int = 400
+
+    # Episode & Script defaults (EP-01, SCRIPT-01)
+    episode_target_minutes: int = Field(default=25, ge=5, le=120)
+    episode_chars_per_minute: int = Field(default=260, ge=100, le=600)
+    speaker_review_threshold: float = Field(default=0.80, ge=0.0, le=1.0)
+
+    # TTS & Audio Pipeline (VOICE-01, TTS-01, EXPORT-01)
+    tts_provider: str = "cosyvoice"
+    cosyvoice_api_key: str = ""
+    cosyvoice_base_url: str = "https://dashscope.aliyuncs.com/api/v1"
+    cosyvoice_model: str = "cosyvoice-v3.5-flash"
+    tts_mock_mode: bool = True
+    tts_max_concurrency: int = Field(default=2, ge=1, le=32)
+    tts_max_retries: int = Field(default=3, ge=0, le=10)
+    tts_timeout_seconds: float = Field(default=120.0, gt=0)
+    tts_max_chars_per_request: int = Field(default=400, ge=50, le=2000)
+    tts_price_per_10k_chars: float = 0.20
+
+    ffmpeg_bin: str = "ffmpeg"
+    audio_output_format: str = "mp3"
+    audio_bitrate: str = "128k"
+    audio_sample_rate: int = 24000
+    audio_gap_same_speaker_ms: int = 250
+    audio_gap_speaker_change_ms: int = 500
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -60,6 +91,12 @@ class Settings(BaseSettings):
     @property
     def storage_path(self) -> Path:
         return Path(self.storage_root).resolve()
+
+    @property
+    def audio_storage_path(self) -> Path:
+        if self.audio_storage_root:
+            return Path(self.audio_storage_root).resolve()
+        return (self.storage_path / "audio").resolve()
 
 
 @lru_cache

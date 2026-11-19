@@ -8,7 +8,12 @@ celery_app = Celery(
     "ncke_worker",
     broker=settings.celery_broker_url,
     backend=settings.celery_result_backend,
-    include=["worker.tasks.pipeline_tasks"],
+    include=[
+        "worker.tasks.pipeline_tasks",
+        "worker.tasks.episode_tasks",
+        "worker.tasks.tts_tasks",
+        "worker.tasks.audio_export_tasks",
+    ],
 )
 
 celery_app.conf.update(
@@ -20,4 +25,8 @@ celery_app.conf.update(
     task_acks_late=True,
     worker_prefetch_multiplier=1,
     task_reject_on_worker_lost=True,
+    task_routes={
+        "worker.tasks.tts_tasks.*": {"queue": "tts"},
+        "worker.tasks.audio_export_tasks.*": {"queue": "audio_export"},
+    },
 )

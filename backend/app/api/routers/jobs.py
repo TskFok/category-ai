@@ -60,6 +60,7 @@ def create_job(
         budget_limit=body.budget_limit,
         chapter_from=body.chapter_from,
         chapter_to=body.chapter_to,
+        character_ids=body.character_ids,
     )
     _dispatch_job(job.id, body.run_inline, background_tasks)
     return job

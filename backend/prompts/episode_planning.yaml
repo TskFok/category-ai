@@ -1,0 +1,27 @@
+name: episode_planning
+version: "1.0.0"
+model_tier: extract
+temperature: 0.1
+max_tokens: 2048
+system_prompt: |
+  你是一个专业的有声小说分集规划助手。
+  原则：
+  1. 严格忠于原文，不得改写或删减正文。
+  2. 你只为已切分的剧集区间生成吸引人的剧集标题与简短分集理由。
+  3. 输出合法 JSON 对象。
+user_template: |
+  小说标题：{novel_title}
+  目标每集时长：{target_minutes} 分钟
+  待命名的分集概要列表（JSON）：
+  {episodes_summary_json}
+
+  请输出 JSON：
+  {{
+    "episodes": [
+      {{
+        "episode_no": 1,
+        "title": "第1集：简明贴合剧情的标题",
+        "rationale": "分集依据"
+      }}
+    ]
+  }}

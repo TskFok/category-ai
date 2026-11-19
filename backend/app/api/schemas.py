@@ -38,6 +38,8 @@ class NovelOut(BaseModel):
     chunk_count: int
     data_revision: int
     status: str
+    license_scope: str = "private"
+    copyright_confirmed: bool = False
     diagnostics_json: dict[str, Any]
     created_at: datetime
     updated_at: datetime
@@ -77,6 +79,10 @@ class JobCreateIn(BaseModel):
     budget_limit: float | None = Field(default=None, ge=0.0)
     chapter_from: int | None = Field(default=None, ge=1)
     chapter_to: int | None = Field(default=None, ge=1)
+    character_ids: list[str] | None = Field(
+        default=None,
+        description="Optional character IDs for targeted incremental S5_ANALYZE reruns",
+    )
     run_inline: bool = Field(
         default=False,
         description="Execute inline/background without requiring external Celery worker (useful in dev/test)",
@@ -127,6 +133,7 @@ class CharacterSummaryOut(BaseModel):
     canonical_name: str
     entity_type: str
     status: str
+    analysis_status: str = "pending"
     first_appearance_chapter: int | None
     mention_count: int
     summary: str | None
@@ -364,3 +371,300 @@ class ExportArtifactOut(BaseModel):
     file_size_bytes: int
     download_url: str
     created_at: datetime
+
+
+# --- M1: Episodes & Plans ---
+class EpisodePlanCreateIn(BaseModel):
+    target_minutes: int = Field(default=25, ge=5, le=120)
+    chars_per_minute: int = Field(default=260, ge=100, le=600)
+    strategy: str = Field(default="chapter_first", pattern="^(chapter_first|story_first)$")
+    max_deviation_pct: int = Field(default=25, ge=5, le=100)
+    use_llm_titles: bool = True
+
+
+class EpisodeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    plan_id: str
+    novel_id: str
+    episode_no: int
+    title: str
+    rationale: str | None
+    start_chapter_id: str
+    start_offset: int
+    end_chapter_id: str
+    end_offset: int
+    char_count: int
+    paragraph_count: int
+    estimated_seconds: int
+    text_hash: str
+    status: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class EpisodePlanOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    novel_id: str
+    source_version: int
+    plan_version: int
+    target_minutes: int
+    chars_per_minute: int
+    strategy: str
+    max_deviation_pct: int
+    status: str
+    validation_json: dict[str, Any]
+    created_at: datetime
+    updated_at: datetime
+
+
+class EpisodePlanWithEpisodesOut(EpisodePlanOut):
+    episodes: list[EpisodeOut] = Field(default_factory=list)
+
+
+class EpisodeUpdateIn(BaseModel):
+    title: str | None = None
+    rationale: str | None = None
+    start_chapter_id: str | None = None
+    start_offset: int | None = Field(default=None, ge=0)
+    end_chapter_id: str | None = None
+    end_offset: int | None = Field(default=None, ge=1)
+    status: str | None = None
+
+
+class CoverageValidationOut(BaseModel):
+    plan_id: str
+    valid: bool
+    coverage_ratio: float
+    total_chars: int
+    covered_chars: int
+    errors: list[str]
+
+
+# --- M1: Script Segments & Speaker Review ---
+class SegmentCandidateOut(BaseModel):
+    id: str
+    character_id: str | None
+    candidate_name: str
+    score: float
+    reason: str | None
+
+
+class CurrentAudioMiniOut(BaseModel):
+    id: str
+    status: str
+    voice_id: str
+    duration_ms: int
+    audio_format: str
+    checksum: str
+    stream_url: str | None
+
+
+class ScriptSegmentOut(BaseModel):
+    id: str
+    novel_id: str
+    episode_id: str
+    chapter_id: str
+    order_no: int
+    start_offset: int
+    end_offset: int
+    text_content: str
+    text_hash: str
+    segment_type: str
+    speaker_character_id: str | None
+    speaker_name: str | None = None
+    narrator_key: str | None
+    inference_reason: str | None
+    confidence: float
+    emotion: str
+    emotion_intensity: float
+    speech_rate: float
+    review_status: str
+    manual_override: bool
+    revision: int
+    candidates: list[SegmentCandidateOut] = Field(default_factory=list)
+    current_audio: CurrentAudioMiniOut | None = None
+
+
+class ScriptSegmentUpdateIn(BaseModel):
+    segment_type: str | None = None
+    speaker_character_id: str | None = None
+    set_narrator: bool = False
+    narrator_key: str | None = None
+    emotion: str | None = None
+    emotion_intensity: float | None = Field(default=None, ge=0.0, le=1.0)
+    speech_rate: float | None = Field(default=None, ge=0.5, le=2.0)
+    instruction: str | None = None
+    review_status: str | None = None
+
+
+class SpeakerReviewDecisionIn(BaseModel):
+    segment_id: str
+    action: str = Field(default="confirm", pattern="^(confirm|narrator|skip)$")
+    speaker_character_id: str | None = None
+    narrator_key: str | None = None
+    emotion: str | None = None
+
+
+class SpeakerReviewBatchIn(BaseModel):
+    decisions: list[SpeakerReviewDecisionIn]
+
+
+# --- M2: Voice Profiles ---
+class VoiceProfileCreateIn(BaseModel):
+    character_id: str | None = None
+    narrator_key: str | None = None
+    display_name: str | None = None
+    voice_prompt: str = ""
+    voice_id: str | None = None
+    language: str = "zh-CN"
+    default_rate: float = Field(default=1.0, ge=0.5, le=2.0)
+    pitch: float = Field(default=1.0, ge=0.5, le=2.0)
+    seed: int | None = None
+    consent_confirmed: bool = False
+    consent_note: str | None = None
+
+
+class VoiceProfileUpdateIn(BaseModel):
+    display_name: str | None = None
+    voice_prompt: str | None = None
+    voice_id: str | None = None
+    default_rate: float | None = Field(default=None, ge=0.5, le=2.0)
+    pitch: float | None = Field(default=None, ge=0.5, le=2.0)
+    consent_confirmed: bool | None = None
+    consent_note: str | None = None
+
+
+class VoiceDesignIn(BaseModel):
+    preview_text: str | None = None
+
+
+class VoiceLockIn(BaseModel):
+    candidate_index: int | None = None
+    voice_id: str | None = None
+    voice_prompt: str | None = None
+    scope: str = Field(default="unrendered_only", pattern="^(unrendered_only|current_episode|all_episodes)$")
+
+
+class VoiceProfileOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    novel_id: str
+    character_id: str | None
+    narrator_key: str | None
+    display_name: str
+    provider: str
+    target_model: str
+    voice_prompt: str
+    voice_id: str | None
+    sample_audio_ref: str | None
+    language: str
+    default_rate: float
+    pitch: float
+    seed: int | None
+    profile_version: int
+    approval_status: str
+    is_active: bool
+    locked_at: datetime | None
+    candidates_json: list[dict[str, Any]]
+    consent_confirmed: bool
+    consent_note: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class VoiceLockResultOut(BaseModel):
+    profile: VoiceProfileOut
+    impacted_segments: int
+    impacted_chars: int
+    estimated_rerender_cost: float
+
+
+# --- M3: Render Jobs, Audio Segments & Audio Exports ---
+class RenderJobCreateIn(BaseModel):
+    budget_limit: float | None = Field(default=None, ge=0.0)
+    idempotency_key: str | None = None
+    run_inline: bool = True
+
+
+class RenderJobOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    novel_id: str
+    episode_id: str
+    status: str
+    budget_limit: float
+    spent_cost: float
+    source_revision: int
+    profile_snapshot_json: dict[str, Any]
+    progress_json: dict[str, Any]
+    idempotency_key: str | None
+    error_summary: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class AudioSegmentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    novel_id: str
+    episode_id: str
+    script_segment_id: str
+    render_job_id: str | None
+    voice_profile_id: str | None
+    voice_profile_version: int
+    voice_id: str
+    audio_format: str
+    duration_ms: int
+    file_size_bytes: int
+    checksum: str
+    cache_key: str
+    is_current: bool
+    status: str
+    error_message: str | None
+    created_at: datetime
+
+
+class AudioExportCreateIn(BaseModel):
+    episode_id: str | None = None
+    plan_id: str | None = None
+    format: str = Field(default="mp3", pattern="^(mp3|wav|zip)$")
+
+
+class AudioExportOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    novel_id: str
+    episode_id: str | None
+    format: str
+    status: str
+    file_size_bytes: int
+    duration_ms: int
+    error_message: str | None
+    download_url: str
+    created_at: datetime
+
+
+class ProviderOperationUsageOut(BaseModel):
+    provider: str
+    model: str
+    operation: str
+    call_count: int
+    input_chars: int
+    audio_duration_ms: int
+    actual_cost: float
+
+
+class ProviderUsageSummaryOut(BaseModel):
+    novel_id: str
+    total_input_chars: int
+    total_audio_duration_ms: int
+    total_actual_cost: float
+    by_operation: list[ProviderOperationUsageOut]

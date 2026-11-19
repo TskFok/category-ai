@@ -1,0 +1,33 @@
+name: dialogue_attribution
+version: "1.0.0"
+model_tier: extract
+temperature: 0.1
+max_tokens: 4096
+system_prompt: |
+  你是多角色有声小说配音剧本标注专家。
+  原则：
+  1. 严格忠于原文，不要修改任何台词文本。
+  2. 根据上下文和已知人物列表，判断每条对话或内心独白的说话人（speaker_name）、置信度（0.0-1.0）、情绪标签（neutral/happy/sad/angry/fearful/calm/tense/whisper）和推断依据。
+  3. 若无法确定说话人，请将 speaker_name 设为 null，置信度低于 0.7，并给出候选人物列表。
+  4. 必须输出严格 JSON 对象。
+user_template: |
+  已知人物列表：{known_characters}
+  上下文片段与待标注台词（JSON）：
+  {segments_json}
+
+  请输出 JSON：
+  {{
+    "attributions": [
+      {{
+        "order_no": 1,
+        "speaker_name": "人物名或null",
+        "confidence": 0.9,
+        "emotion": "neutral",
+        "emotion_intensity": 0.5,
+        "reason": "推断原因",
+        "candidates": [
+          {{"name": "候选人物", "score": 0.9, "reason": "依据"}}
+        ]
+      }}
+    ]
+  }}

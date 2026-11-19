@@ -1,10 +1,15 @@
 import type {
   AnalysisReport,
+  AudioExport,
+  AudioSegment,
   ChapterDetail,
   ChapterSummary,
   CharacterDetail,
   CharacterSummary,
+  CoverageValidation,
   EgoGraph,
+  Episode,
+  EpisodePlan,
   EventItem,
   EvidenceDetail,
   EvidenceSummary,
@@ -13,18 +18,60 @@ import type {
   MentionItem,
   Novel,
   PaginatedResponse,
+  ProviderUsageSummary,
   RelationshipItem,
+  RenderJob,
   ReviewTask,
+  ScriptSegment,
   UsageSummary,
+  VoiceLockResult,
+  VoiceProfile,
 } from "../types/api";
 
 const API_BASE = "/api/v1";
+const AUTH_TOKEN_KEY = "ncke_auth_token";
+
+export function getAuthToken(): string {
+  try {
+    return sessionStorage.getItem(AUTH_TOKEN_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+export function setAuthToken(token: string): void {
+  try {
+    const trimmed = token.trim();
+    if (trimmed) {
+      sessionStorage.setItem(AUTH_TOKEN_KEY, trimmed);
+    } else {
+      sessionStorage.removeItem(AUTH_TOKEN_KEY);
+    }
+  } catch {
+    // ignore storage errors
+  }
+}
+
+/**
+ * Append access_token query param ONLY when a session Bearer token is configured,
+ * allowing HTML <audio> and download links to authenticate cleanly (FIX-04).
+ */
+export function getAuthorizedMediaUrl(url: string): string {
+  const token = getAuthToken();
+  if (!token) return url;
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}access_token=${encodeURIComponent(token)}`;
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = getAuthToken();
+  const authHeader: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
+    credentials: "same-origin",
     headers: {
       ...(init?.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+      ...authHeader,
       ...(init?.headers || {}),
     },
   });
@@ -49,11 +96,12 @@ export const api = {
   listNovels: (page = 1, pageSize = 20) =>
     request<PaginatedResponse<Novel>>(`/novels?page=${page}&page_size=${pageSize}`),
 
-  uploadNovel: (file: File, title: string, author?: string) => {
+  uploadNovel: (file: File, title: string, author?: string, copyrightConfirmed = true) => {
     const fd = new FormData();
     fd.append("file", file);
     fd.append("title", title);
     if (author) fd.append("author", author);
+    fd.append("copyright_confirmed", String(copyrightConfirmed));
     return request<Novel>("/novels", { method: "POST", body: fd });
   },
 
@@ -80,6 +128,7 @@ export const api = {
       budget_limit?: number;
       chapter_from?: number;
       chapter_to?: number;
+      character_ids?: string[];
       run_inline?: boolean;
     }
   ) =>
@@ -177,36 +226,205 @@ export const api = {
       }),
     }),
 
-  // Exports
+  // Data Exports (NCKE)
   listExports: (novelId: string) => request<ExportArtifact[]>(`/novels/${novelId}/exports`),
   createExport: (novelId: string, format: "json" | "csv" | "graphml") =>
     request<ExportArtifact>(`/novels/${novelId}/exports`, {
       method: "POST",
       body: JSON.stringify({ format }),
     }),
+
+  // M1: Episode Plans & Episodes
+  listEpisodePlans: (novelId: string) =>
+    request<EpisodePlan[]>(`/novels/${novelId}/episode-plans`),
+
+  createEpisodePlan: (
+    novelId: string,
+    payload: {
+      target_minutes?: number;
+      chars_per_minute?: number;
+      strategy?: "chapter_first" | "story_first";
+      max_deviation_pct?: number;
+    }
+  ) =>
+    request<EpisodePlan>(`/novels/${novelId}/episode-plans`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  listEpisodes: (planId: string) =>
+    request<Episode[]>(`/episode-plans/${planId}/episodes`),
+
+  updateEpisode: (
+    episodeId: string,
+    payload: Partial<Pick<Episode, "title" | "rationale" | "start_offset" | "end_offset" | "status">>
+  ) =>
+    request<Episode>(`/episodes/${episodeId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+
+  validateEpisodePlan: (planId: string) =>
+    request<CoverageValidation>(`/episode-plans/${planId}/validate`, { method: "POST" }),
+
+  // M1: Dialogue Scripts
+  analyzeEpisodeScript: (episodeId: string) =>
+    request<ScriptSegment[]>(`/episodes/${episodeId}/analyze-script`, { method: "POST" }),
+
+  listEpisodeSegments: (episodeId: string, reviewStatus?: string) => {
+    const qs = new URLSearchParams();
+    if (reviewStatus) qs.set("review_status", reviewStatus);
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return request<ScriptSegment[]>(`/episodes/${episodeId}/segments${suffix}`);
+  },
+
+  updateScriptSegment: (
+    segmentId: string,
+    payload: {
+      segment_type?: string;
+      speaker_character_id?: string | null;
+      set_narrator?: boolean;
+      narrator_key?: string;
+      emotion?: string;
+      emotion_intensity?: number;
+      speech_rate?: number;
+      review_status?: string;
+    }
+  ) =>
+    request<ScriptSegment>(`/script-segments/${segmentId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+
+  // M2: Voice Profiles
+  listVoiceProfiles: (novelId: string) =>
+    request<VoiceProfile[]>(`/novels/${novelId}/voice-profiles`),
+
+  createVoiceProfile: (
+    novelId: string,
+    payload: {
+      character_id?: string | null;
+      narrator_key?: string | null;
+      display_name?: string;
+      voice_prompt?: string;
+      voice_id?: string;
+      consent_confirmed?: boolean;
+    }
+  ) =>
+    request<VoiceProfile>(`/novels/${novelId}/voice-profiles`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  designVoiceCandidates: (profileId: string, previewText?: string) =>
+    request<VoiceProfile>(`/voice-profiles/${profileId}/design-candidates`, {
+      method: "POST",
+      body: JSON.stringify({ preview_text: previewText }),
+    }),
+
+  lockVoiceProfile: (
+    profileId: string,
+    payload: {
+      candidate_index?: number;
+      voice_id?: string;
+      voice_prompt?: string;
+      scope?: "unrendered_only" | "current_episode" | "all_episodes";
+    }
+  ) =>
+    request<VoiceLockResult>(`/voice-profiles/${profileId}/lock`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  // M3: Render Jobs & Audio Exports
+  createRenderJob: (
+    episodeId: string,
+    payload: { budget_limit?: number; idempotency_key?: string; run_inline?: boolean } = {
+      run_inline: true,
+    }
+  ) =>
+    request<RenderJob>(`/episodes/${episodeId}/render-jobs`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  listRenderJobs: (episodeId: string) =>
+    request<RenderJob[]>(`/episodes/${episodeId}/render-jobs`),
+
+  regenerateScriptSegment: (segmentId: string) =>
+    request<AudioSegment>(`/script-segments/${segmentId}/regenerate`, { method: "POST" }),
+
+  listAudioExports: (novelId: string) =>
+    request<AudioExport[]>(`/novels/${novelId}/audio-exports`),
+
+  createAudioExport: (
+    novelId: string,
+    payload: { episode_id?: string; plan_id?: string; format: "mp3" | "wav" | "zip" }
+  ) =>
+    request<AudioExport>(`/novels/${novelId}/audio-exports`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  getProviderUsage: (novelId: string) =>
+    request<ProviderUsageSummary>(`/novels/${novelId}/provider-usage`),
 };
 
 /**
- * Subscribe to Job SSE stream with event_id deduplication.
+ * FIX-04: Subscribe to Job SSE stream using authenticated fetch streaming
+ * (supports Authorization: Bearer header without leaking secrets to URLs).
  */
 export function subscribeJobEvents(
   jobId: string,
   onUpdate: (data: Record<string, unknown>) => void
 ): () => void {
+  const controller = new AbortController();
   const seenIds = new Set<string>();
-  const es = new EventSource(`${API_BASE}/jobs/${jobId}/events`);
-  es.addEventListener("job_update", (evt) => {
-    const msg = evt as MessageEvent;
-    if (msg.lastEventId && seenIds.has(msg.lastEventId)) return;
-    if (msg.lastEventId) seenIds.add(msg.lastEventId);
+  const token = getAuthToken();
+
+  (async () => {
     try {
-      onUpdate(JSON.parse(msg.data));
+      const res = await fetch(`${API_BASE}/jobs/${jobId}/events`, {
+        method: "GET",
+        credentials: "same-origin",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        signal: controller.signal,
+      });
+      if (!res.ok || !res.body) return;
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const blocks = buffer.split("\n\n");
+        buffer = blocks.pop() || "";
+
+        for (const block of blocks) {
+          let evtId = "";
+          let dataLine = "";
+          for (const line of block.split("\n")) {
+            if (line.startsWith("id:")) evtId = line.slice(3).trim();
+            if (line.startsWith("data:")) dataLine += line.slice(5).trim();
+          }
+          if (evtId && seenIds.has(evtId)) continue;
+          if (evtId) seenIds.add(evtId);
+          if (dataLine) {
+            try {
+              onUpdate(JSON.parse(dataLine));
+            } catch {
+              // ignore malformed JSON
+            }
+          }
+        }
+      }
     } catch {
-      // ignore malformed event
+      // stream aborted or closed
     }
-  });
-  es.onerror = () => {
-    es.close();
-  };
-  return () => es.close();
+  })();
+
+  return () => controller.abort();
 }

@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import (
     JSON,
+    Boolean,
     DateTime,
     Float,
     ForeignKey,
@@ -17,14 +18,21 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.enums import (
+    AnalysisStatus,
+    AudioSegmentStatus,
     ClaimType,
     EntityType,
+    EpisodePlanStatus,
+    EpisodeStatus,
     JobState,
     RelationDirection,
     ReviewStatus,
     ReviewTaskState,
+    SegmentReviewStatus,
+    SegmentType,
     TaskState,
     VerificationStatus,
+    VoiceApprovalStatus,
 )
 from app.infrastructure.db.session import Base
 
@@ -63,6 +71,8 @@ class Novel(Base, TimestampMixin):
     chunk_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     data_revision: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="ready", nullable=False)
+    license_scope: Mapped[str] = mapped_column(String(32), default="private", nullable=False)
+    copyright_confirmed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     diagnostics_json: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
 
 
@@ -131,6 +141,9 @@ class Character(Base, TimestampMixin):
     )
     status: Mapped[str] = mapped_column(
         String(32), default=ReviewStatus.CANDIDATE.value, nullable=False
+    )
+    analysis_status: Mapped[str] = mapped_column(
+        String(32), default=AnalysisStatus.PENDING.value, nullable=False
     )
     first_appearance_chapter: Mapped[int | None] = mapped_column(Integer, nullable=True)
     mention_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -531,3 +544,280 @@ class ExportArtifact(Base, TimestampMixin):
     storage_ref: Mapped[str] = mapped_column(String(512), nullable=False)
     data_revision: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     file_size_bytes: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+
+# ==============================================================================
+# Audiobook Extension Models (M1: Episodes & Script, M2: Voice, M3: Audio/Export)
+# ==============================================================================
+
+
+class EpisodePlan(Base, TimestampMixin):
+    __tablename__ = "episode_plans"
+    __table_args__ = (
+        UniqueConstraint("novel_id", "plan_version", name="uq_episode_plans_novel_ver"),
+        Index("ix_episode_plans_novel", "novel_id", "plan_version"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    novel_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("novels.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    source_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    plan_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    target_minutes: Mapped[int] = mapped_column(Integer, default=25, nullable=False)
+    chars_per_minute: Mapped[int] = mapped_column(Integer, default=260, nullable=False)
+    strategy: Mapped[str] = mapped_column(String(32), default="chapter_first", nullable=False)
+    max_deviation_pct: Mapped[int] = mapped_column(Integer, default=25, nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(32), default=EpisodePlanStatus.DRAFT.value, nullable=False
+    )
+    validation_json: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+
+
+class Episode(Base, TimestampMixin):
+    __tablename__ = "episodes"
+    __table_args__ = (
+        UniqueConstraint("plan_id", "episode_no", name="uq_episodes_plan_no"),
+        Index("ix_episodes_plan_no", "plan_id", "episode_no"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    plan_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("episode_plans.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    novel_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("novels.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    episode_no: Mapped[int] = mapped_column(Integer, nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    rationale: Mapped[str | None] = mapped_column(Text, nullable=True)
+    start_chapter_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("chapters.id", ondelete="CASCADE"), nullable=False
+    )
+    start_offset: Mapped[int] = mapped_column(Integer, nullable=False)
+    end_chapter_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("chapters.id", ondelete="CASCADE"), nullable=False
+    )
+    end_offset: Mapped[int] = mapped_column(Integer, nullable=False)
+    char_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    paragraph_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    estimated_seconds: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    text_hash: Mapped[str] = mapped_column(String(64), default="", nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(32), default=EpisodeStatus.DRAFT.value, nullable=False
+    )
+
+
+class ScriptSegment(Base, TimestampMixin):
+    __tablename__ = "script_segments"
+    __table_args__ = (
+        UniqueConstraint("episode_id", "order_no", name="uq_script_segments_ep_order"),
+        Index("ix_script_segments_ep_order", "episode_id", "order_no"),
+        Index("ix_script_segments_novel_speaker", "novel_id", "speaker_character_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    novel_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("novels.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    episode_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("episodes.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    chapter_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("chapters.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    order_no: Mapped[int] = mapped_column(Integer, nullable=False)
+    start_offset: Mapped[int] = mapped_column(Integer, nullable=False)
+    end_offset: Mapped[int] = mapped_column(Integer, nullable=False)
+    text_content: Mapped[str] = mapped_column(Text, nullable=False)
+    text_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    segment_type: Mapped[str] = mapped_column(
+        String(32), default=SegmentType.NARRATION.value, nullable=False
+    )
+    speaker_character_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("characters.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    narrator_key: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    inference_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    confidence: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
+    emotion: Mapped[str] = mapped_column(String(32), default="neutral", nullable=False)
+    emotion_intensity: Mapped[float] = mapped_column(Float, default=0.5, nullable=False)
+    speech_rate: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
+    review_status: Mapped[str] = mapped_column(
+        String(32), default=SegmentReviewStatus.AUTO_ACCEPTED.value, nullable=False
+    )
+    manual_override: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class SegmentCandidate(Base, TimestampMixin):
+    __tablename__ = "segment_candidates"
+    __table_args__ = (Index("ix_segment_candidates_seg", "segment_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    segment_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("script_segments.id", ondelete="CASCADE"), nullable=False
+    )
+    character_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("characters.id", ondelete="SET NULL"), nullable=True
+    )
+    candidate_name: Mapped[str] = mapped_column(String(255), default="", nullable=False)
+    score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    model_version: Mapped[str] = mapped_column(String(64), default="rule", nullable=False)
+
+
+class VoiceProfile(Base, TimestampMixin):
+    __tablename__ = "voice_profiles"
+    __table_args__ = (
+        Index("ix_voice_profiles_novel_char", "novel_id", "character_id"),
+        Index("ix_voice_profiles_novel_narrator", "novel_id", "narrator_key"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    novel_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("novels.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    character_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("characters.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    narrator_key: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    display_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    provider: Mapped[str] = mapped_column(String(64), default="cosyvoice", nullable=False)
+    target_model: Mapped[str] = mapped_column(String(64), default="cosyvoice-v3.5-flash", nullable=False)
+    voice_prompt: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    voice_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    sample_audio_ref: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    language: Mapped[str] = mapped_column(String(32), default="zh-CN", nullable=False)
+    default_rate: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
+    pitch: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
+    seed: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    profile_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    approval_status: Mapped[str] = mapped_column(
+        String(32), default=VoiceApprovalStatus.DRAFT.value, nullable=False
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    locked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    candidates_json: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
+    consent_confirmed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    consent_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class VoicePerformance(Base, TimestampMixin):
+    __tablename__ = "voice_performances"
+    __table_args__ = (Index("ix_voice_perf_segment", "segment_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    segment_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("script_segments.id", ondelete="CASCADE"), nullable=False
+    )
+    emotion: Mapped[str] = mapped_column(String(32), default="neutral", nullable=False)
+    intensity: Mapped[float] = mapped_column(Float, default=0.5, nullable=False)
+    instruction: Mapped[str | None] = mapped_column(Text, nullable=True)
+    rate: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
+    pitch: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class RenderJob(Base, TimestampMixin):
+    __tablename__ = "render_jobs"
+    __table_args__ = (Index("ix_render_jobs_episode", "episode_id", "created_at"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    novel_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("novels.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    episode_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("episodes.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    status: Mapped[str] = mapped_column(String(32), default=JobState.PENDING.value, nullable=False)
+    budget_limit: Mapped[float] = mapped_column(Float, default=20.0, nullable=False)
+    spent_cost: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    source_revision: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    profile_snapshot_json: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    progress_json: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    idempotency_key: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    error_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class AudioSegment(Base, TimestampMixin):
+    __tablename__ = "audio_segments"
+    __table_args__ = (
+        Index("ix_audio_segments_script_seg", "script_segment_id"),
+        Index("ix_audio_segments_cache_key", "cache_key"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    novel_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("novels.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    episode_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("episodes.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    script_segment_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("script_segments.id", ondelete="CASCADE"), nullable=False
+    )
+    render_job_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("render_jobs.id", ondelete="SET NULL"), nullable=True
+    )
+    voice_profile_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("voice_profiles.id", ondelete="SET NULL"), nullable=True
+    )
+    voice_profile_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    voice_id: Mapped[str] = mapped_column(String(128), default="", nullable=False)
+    audio_ref: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    audio_format: Mapped[str] = mapped_column(String(16), default="wav", nullable=False)
+    duration_ms: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    file_size_bytes: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    checksum: Mapped[str] = mapped_column(String(64), default="", nullable=False)
+    cache_key: Mapped[str] = mapped_column(String(128), default="", nullable=False)
+    is_current: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(32), default=AudioSegmentStatus.PENDING.value, nullable=False
+    )
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class AudioExport(Base, TimestampMixin):
+    __tablename__ = "audio_exports"
+    __table_args__ = (Index("ix_audio_exports_novel", "novel_id", "created_at"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    novel_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("novels.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    episode_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("episodes.id", ondelete="SET NULL"), nullable=True
+    )
+    format: Mapped[str] = mapped_column(String(16), default="mp3", nullable=False)  # mp3 | wav | zip
+    status: Mapped[str] = mapped_column(String(32), default="pending", nullable=False)
+    manifest_ref: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    file_ref: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    file_size_bytes: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    duration_ms: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class ProviderCall(Base, TimestampMixin):
+    __tablename__ = "provider_calls"
+    __table_args__ = (Index("ix_provider_calls_novel", "novel_id", "provider"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    novel_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("novels.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    render_job_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("render_jobs.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    provider: Mapped[str] = mapped_column(String(64), nullable=False)
+    model: Mapped[str] = mapped_column(String(64), nullable=False)
+    operation: Mapped[str] = mapped_column(String(64), default="synthesize", nullable=False)
+    request_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    input_chars: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    audio_duration_ms: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    estimated_cost: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    actual_cost: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    latency_ms: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    attempt: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), default="ok", nullable=False)
+    error_type: Mapped[str | None] = mapped_column(String(64), nullable=True)

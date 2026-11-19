@@ -243,6 +243,124 @@ class DeepSeekClient:
                     },
                 ],
             }
+        elif task_hint == "episode_planning":
+            # Parse summary JSON from prompt if present and refine titles cleanly
+            episodes_out = []
+            m = re.search(r"(\[.*\])", user_prompt, flags=re.S)
+            if m:
+                try:
+                    items = json.loads(m.group(1))
+                    for item in items:
+                        ep_no = item.get("episode_no", 1)
+                        base_title = item.get("default_title") or f"第{ep_no}集"
+                        episodes_out.append(
+                            {
+                                "episode_no": ep_no,
+                                "title": base_title,
+                                "rationale": item.get("default_rationale") or "按自然章节与时长规划",
+                            }
+                        )
+                except Exception:
+                    episodes_out = []
+            data = {"episodes": episodes_out}
+        elif task_hint == "dialogue_attribution":
+            # Heuristic attribution: match known characters appearing in preceding/following context
+            known_match = re.search(r"已知人物列表：([^\n]*)", user_prompt)
+            known_names = [
+                n.strip()
+                for n in (known_match.group(1).split(",") if known_match else [])
+                if n.strip()
+            ]
+            attributions = []
+            m = re.search(r"(\[.*\])", user_prompt, flags=re.S)
+            if m:
+                try:
+                    segs = json.loads(m.group(1))
+                    for seg in segs:
+                        order_no = seg.get("order_no")
+                        ctx = (seg.get("context_before") or "") + " " + (seg.get("context_after") or "")
+                        text = seg.get("text") or ""
+                        matched = None
+                        for kn in known_names:
+                            if kn in (seg.get("context_before") or ""):
+                                matched = kn
+                                break
+                        if not matched:
+                            for kn in known_names:
+                                if kn in ctx:
+                                    matched = kn
+                                    break
+                        emotion = "neutral"
+                        if "！" in text or "怒" in ctx:
+                            emotion = "angry"
+                        elif "？" in text:
+                            emotion = "tense"
+                        elif "笑" in ctx:
+                            emotion = "happy"
+                        elif "悲" in ctx or "泪" in ctx or "叹" in ctx:
+                            emotion = "sad"
+
+                        if matched:
+                            attributions.append(
+                                {
+                                    "order_no": order_no,
+                                    "speaker_name": matched,
+                                    "confidence": 0.91,
+                                    "emotion": emotion,
+                                    "emotion_intensity": 0.65,
+                                    "reason": f"上下文邻近出现人物「{matched}」",
+                                    "candidates": [
+                                        {"name": matched, "score": 0.91, "reason": "邻近上下文匹配"}
+                                    ],
+                                }
+                            )
+                        else:
+                            cands = [
+                                {"name": kn, "score": 0.45, "reason": "章节已知人物候选"}
+                                for kn in known_names[:2]
+                            ]
+                            attributions.append(
+                                {
+                                    "order_no": order_no,
+                                    "speaker_name": None,
+                                    "confidence": 0.45,
+                                    "emotion": emotion,
+                                    "emotion_intensity": 0.5,
+                                    "reason": "上下文缺少明确说话人提示，需人工确认",
+                                    "candidates": cands,
+                                }
+                            )
+                except Exception:
+                    attributions = []
+            data = {"attributions": attributions}
+        elif task_hint == "voice_design":
+            name_m = re.search(r"角色名称：([^\n]+)", user_prompt)
+            char_name = name_m.group(1).strip() if name_m else "角色"
+            data = {
+                "candidates": [
+                    {
+                        "label": "沉稳磁性版",
+                        "voice_prompt": f"适合{char_name}的中文配音：音色沉稳克制，咬字清晰，中速偏稳，富有叙事张力。",
+                        "recommended_rate": 1.0,
+                        "recommended_pitch": 0.98,
+                        "rationale": "贴合角色谨慎沉稳的性格画像（创作推荐）",
+                    },
+                    {
+                        "label": "清朗灵动版",
+                        "voice_prompt": f"适合{char_name}的中文配音：声线清朗自然，语调富有层次与情绪起伏，适合对话演绎。",
+                        "recommended_rate": 1.02,
+                        "recommended_pitch": 1.02,
+                        "rationale": "增强对白辨识度与角色差异化（创作推荐）",
+                    },
+                    {
+                        "label": "冷峻克制版",
+                        "voice_prompt": f"适合{char_name}的中文配音：声线偏冷峻干练，停顿利落，适合紧张与对峙场景。",
+                        "recommended_rate": 0.97,
+                        "recommended_pitch": 0.95,
+                        "rationale": "突出角色果断气场（创作推荐）",
+                    },
+                ]
+            }
         else:
             data = {"ok": True}
 

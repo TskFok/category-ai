@@ -4,10 +4,24 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routers import characters, evidence, exports, graph, health, jobs, novels, reviews
+from app.api.routers import (
+    audio,
+    characters,
+    episodes,
+    evidence,
+    exports,
+    graph,
+    health,
+    jobs,
+    novels,
+    reviews,
+    scripts,
+    voices,
+)
 from app.core.config import get_settings
 from app.core.errors import AppError
 from app.core.logging import configure_logging
+from app.core.security import validate_production_auth_config
 from app.infrastructure.db import models  # noqa: F401
 from app.infrastructure.db.session import Base, engine
 
@@ -16,6 +30,7 @@ from app.infrastructure.db.session import Base, engine
 async def lifespan(_app: FastAPI):
     settings = get_settings()
     configure_logging(settings.log_level)
+    validate_production_auth_config(settings)
     # Auto-create tables in sqlite dev/test mode; PostgreSQL uses Alembic migrations
     if settings.database_url.startswith("sqlite"):
         Base.metadata.create_all(bind=engine)
@@ -25,9 +40,13 @@ async def lifespan(_app: FastAPI):
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
-        title="Novel Character Knowledge Engine (NCKE) API",
-        version="1.0.0",
-        description="Evidence-backed novel character knowledge base, graph, and deep analysis API.",
+        title="Category AI — Multi-Role Audiobook & Character Knowledge Engine API",
+        version="2.0.0",
+        description=(
+            "Evidence-backed novel character knowledge base, smart episode planning, "
+            "dialogue script attribution, locked voice profiles, CosyVoice TTS rendering, "
+            "and MP3/WAV/ZIP audiobook export API."
+        ),
         lifespan=lifespan,
     )
 
@@ -55,6 +74,11 @@ def create_app() -> FastAPI:
     app.include_router(evidence.router, prefix=prefix)
     app.include_router(reviews.router, prefix=prefix)
     app.include_router(exports.router, prefix=prefix)
+    # Audiobook extension routers (M1-M3)
+    app.include_router(episodes.router, prefix=prefix)
+    app.include_router(scripts.router, prefix=prefix)
+    app.include_router(voices.router, prefix=prefix)
+    app.include_router(audio.router, prefix=prefix)
 
     return app
 

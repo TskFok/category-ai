@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import html
+import posixpath
 import re
+import xml.etree.ElementTree as ET
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -21,6 +23,7 @@ class LocalStorage:
         self.root = root.resolve()
         (self.root / "novels").mkdir(parents=True, exist_ok=True)
         (self.root / "exports").mkdir(parents=True, exist_ok=True)
+        (self.root / "audio").mkdir(parents=True, exist_ok=True)
 
     def _safe_resolve(self, rel_path: str) -> Path:
         candidate = (self.root / rel_path).resolve()
@@ -74,10 +77,108 @@ class LocalStorage:
             )
         return target
 
+    def save_audio_bytes(self, rel_path: str, data: bytes) -> tuple[str, int]:
+        rel = f"audio/{rel_path.lstrip('/')}"
+        target = self._safe_resolve(rel)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+        return rel, len(data)
 
-def extract_text_from_epub(raw_bytes: bytes) -> str:
+    def get_audio_path(self, rel_path: str) -> Path:
+        target = self._safe_resolve(rel_path)
+        if not target.exists():
+            raise AppError(
+                code="AUDIO_NOT_FOUND",
+                message="Audio file not found on storage",
+                status_code=404,
+            )
+        return target
+
+    def read_bytes(self, rel_path: str) -> bytes:
+        target = self._safe_resolve(rel_path)
+        if not target.exists():
+            raise AppError(
+                code="FILE_NOT_FOUND",
+                message="Stored binary file not found",
+                status_code=404,
+            )
+        return target.read_bytes()
+
+
+def _strip_html(raw_html: str) -> str:
+    text = re.sub(r"<(script|style)[^>]*>.*?</\1>", "", raw_html, flags=re.S | re.I)
+    text = re.sub(r"</(p|div|h[1-6]|br|li)>", "\n", text, flags=re.I)
+    text = re.sub(r"<[^>]+>", "", text)
+    return html.unescape(text).strip()
+
+
+def _resolve_epub_spine_paths(zf: zipfile.ZipFile) -> list[str] | None:
     """
-    Safely extract plain text from an EPUB archive with zip-slip & zip-bomb guards (Section 11).
+    FIX-05: Parse META-INF/container.xml -> OPF manifest + spine reading order.
+    Returns ordered archive member names, or None if OPF spine is missing/unparseable.
+    """
+    names = set(zf.namelist())
+    opf_path: str | None = None
+
+    if "META-INF/container.xml" in names:
+        try:
+            root = ET.fromstring(zf.read("META-INF/container.xml"))
+            for elem in root.iter():
+                if elem.tag.endswith("rootfile"):
+                    full_path = elem.attrib.get("full-path")
+                    if full_path and full_path in names:
+                        opf_path = full_path
+                        break
+        except ET.ParseError:
+            opf_path = None
+
+    if opf_path is None:
+        for name in sorted(names):
+            if name.lower().endswith(".opf"):
+                opf_path = name
+                break
+
+    if not opf_path:
+        return None
+
+    try:
+        opf_root = ET.fromstring(zf.read(opf_path))
+    except (ET.ParseError, KeyError):
+        return None
+
+    opf_dir = posixpath.dirname(opf_path)
+    manifest: dict[str, str] = {}
+    spine_ids: list[str] = []
+
+    for elem in opf_root.iter():
+        tag = elem.tag.rsplit("}", 1)[-1]
+        if tag == "item":
+            item_id = elem.attrib.get("id")
+            href = elem.attrib.get("href")
+            if item_id and href:
+                joined = posixpath.normpath(posixpath.join(opf_dir, href)) if opf_dir else posixpath.normpath(href)
+                manifest[item_id] = joined
+        elif tag == "itemref":
+            idref = elem.attrib.get("idref")
+            if idref:
+                spine_ids.append(idref)
+
+    if not spine_ids:
+        return None
+
+    ordered: list[str] = []
+    for idref in spine_ids:
+        target = manifest.get(idref)
+        if target and target in names:
+            ordered.append(target)
+
+    return ordered if ordered else None
+
+
+def extract_text_from_epub_with_meta(raw_bytes: bytes) -> tuple[str, dict[str, object]]:
+    """
+    FIX-05: Safely extract plain text from an EPUB archive with zip-slip & zip-bomb guards,
+    preferring OPF spine reading order and returning diagnostics if fallback sorting was used.
     """
     try:
         zf = zipfile.ZipFile(BytesIO(raw_bytes))
@@ -86,8 +187,10 @@ def extract_text_from_epub(raw_bytes: bytes) -> str:
 
     total_uncompressed = 0
     html_parts: list[str] = []
+    meta: dict[str, object] = {"epub_spine_used": False, "epub_order_warning": None}
+
     with zf:
-        for info in sorted(zf.infolist(), key=lambda i: i.filename):
+        for info in zf.infolist():
             if ".." in Path(info.filename).parts or info.filename.startswith("/"):
                 raise AppError(
                     code="UNSAFE_ARCHIVE",
@@ -101,12 +204,35 @@ def extract_text_from_epub(raw_bytes: bytes) -> str:
                     message="EPUB uncompressed size exceeds safety limit",
                     status_code=400,
                 )
-            lower = info.filename.lower()
-            if lower.endswith((".xhtml", ".html", ".htm")):
-                raw_html = zf.read(info).decode("utf-8", errors="replace")
-                text = re.sub(r"<(script|style)[^>]*>.*?</\1>", "", raw_html, flags=re.S | re.I)
-                text = re.sub(r"</(p|div|h[1-6]|br|li)>", "\n", text, flags=re.I)
-                text = re.sub(r"<[^>]+>", "", text)
-                html_parts.append(html.unescape(text).strip())
 
-    return "\n\n".join(p for p in html_parts if p)
+        spine_paths = _resolve_epub_spine_paths(zf)
+        if spine_paths:
+            meta["epub_spine_used"] = True
+            ordered_files = [
+                p for p in spine_paths if p.lower().endswith((".xhtml", ".html", ".htm"))
+            ]
+        else:
+            meta["epub_spine_used"] = False
+            meta["epub_order_warning"] = (
+                "OPF spine not found or invalid; fell back to archive filename order. "
+                "Please verify chapter ordering."
+            )
+            ordered_files = [
+                info.filename
+                for info in sorted(zf.infolist(), key=lambda i: i.filename)
+                if info.filename.lower().endswith((".xhtml", ".html", ".htm"))
+            ]
+
+        for member in ordered_files:
+            raw_html = zf.read(member).decode("utf-8", errors="replace")
+            stripped = _strip_html(raw_html)
+            if stripped:
+                html_parts.append(stripped)
+
+    return "\n\n".join(html_parts), meta
+
+
+def extract_text_from_epub(raw_bytes: bytes) -> str:
+    """Backward-compatible wrapper returning plain text extracted from EPUB."""
+    text, _meta = extract_text_from_epub_with_meta(raw_bytes)
+    return text

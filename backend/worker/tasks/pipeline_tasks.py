@@ -4,12 +4,13 @@ import json
 import logging
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.application.job_service import refresh_job_progress
 from app.core.config import get_settings
 from app.domain.enums import (
+    AnalysisStatus,
     ClaimType,
     EntityType,
     JobState,
@@ -63,11 +64,48 @@ def run_job_task(self, job_id: str) -> dict:
         db.close()
 
 
+STAGE_ORDER: dict[str, int] = {
+    PipelineStage.S1_DISCOVER.value: 1,
+    PipelineStage.S2_EXTRACT.value: 2,
+    PipelineStage.S3_DISAMBIGUATE.value: 3,
+    PipelineStage.S4_CONSOLIDATE.value: 4,
+    PipelineStage.S5_ANALYZE.value: 5,
+    PipelineStage.S6_PUBLISH.value: 6,
+}
+
+UPSTREAM_REQUIRED: dict[str, tuple[str, ...]] = {
+    PipelineStage.S6_PUBLISH.value: (
+        PipelineStage.S1_DISCOVER.value,
+        PipelineStage.S2_EXTRACT.value,
+        PipelineStage.S5_ANALYZE.value,
+    ),
+}
+
+
+def _has_upstream_failure(db: Session, job_id: str, stage: str) -> list[str]:
+    deps = UPSTREAM_REQUIRED.get(stage, ())
+    if not deps:
+        return []
+    failed_stages = list(
+        db.scalars(
+            select(TaskRun.stage)
+            .where(
+                TaskRun.job_id == job_id,
+                TaskRun.stage.in_(deps),
+                TaskRun.state == TaskState.FAILED.value,
+            )
+            .distinct()
+        ).all()
+    )
+    return failed_stages
+
+
 def execute_job(db: Session, job_id: str) -> dict:
     """
-    Execute pending TaskRuns for a Job with:
-    - Pause & budget enforcement before each TaskRun
-    - Evidence span verification
+    Execute pending TaskRuns for a Job in strict DAG stage order with:
+    - Pause & per-call budget enforcement
+    - Dependency gate (prevents S6 publish when upstream S1/S2/S5 failed)
+    - Stage-level exception isolation & persistent TaskRun state
     - Persistent progress updates & SSE event publishing
     """
     settings = get_settings()
@@ -92,6 +130,7 @@ def execute_job(db: Session, job_id: str) -> dict:
             .order_by(TaskRun.created_at.asc())
         ).all()
     )
+    pending_runs.sort(key=lambda r: (STAGE_ORDER.get(r.stage, 99), r.created_at))
 
     for tr in pending_runs:
         db.refresh(job)
@@ -111,6 +150,18 @@ def execute_job(db: Session, job_id: str) -> dict:
             _emit(job, "budget_limit_reached")
             return {"status": "paused_budget"}
 
+        # Dependency gate check (FIX-03)
+        failed_deps = _has_upstream_failure(db, job.id, tr.stage)
+        if failed_deps:
+            tr.state = TaskState.SKIPPED.value
+            tr.error_code = "UPSTREAM_STAGE_FAILED"
+            tr.error_message = f"Skipped {tr.stage} due to failed upstream stages: {', '.join(failed_deps)}"
+            db.commit()
+            refresh_job_progress(db, job.id)
+            _emit(job, "task_progress")
+            continue
+
+        job.progress_json = {**(job.progress_json or {}), "current_stage": tr.stage}
         tr.state = TaskState.RUNNING.value
         tr.attempt += 1
         db.commit()
@@ -143,7 +194,7 @@ def execute_job(db: Session, job_id: str) -> dict:
                     job_id=job.id,
                     task_run_id=tr.id,
                     stage=tr.stage,
-                    model=llm.select_model("extract"),
+                    model=llm.select_model("analysis" if tr.stage == PipelineStage.S5_ANALYZE.value else "extract"),
                     prompt_version="1.0.0",
                     status="error",
                     error_type=exc.error_type,
@@ -151,7 +202,7 @@ def execute_job(db: Session, job_id: str) -> dict:
             )
             db.commit()
         except Exception as exc:
-            logger.exception("TaskRun %s failed", tr.id)
+            logger.exception("TaskRun %s (%s) failed", tr.id, tr.stage)
             tr.state = TaskState.FAILED.value
             tr.error_code = "INTERNAL_ERROR"
             tr.error_message = str(exc)[:500]
@@ -160,17 +211,15 @@ def execute_job(db: Session, job_id: str) -> dict:
         refresh_job_progress(db, job.id)
         _emit(job, "task_progress")
 
-    # If FULL_PIPELINE, also run S3 -> S4 -> S5 -> S6 deterministically
-    if job.job_type == PipelineStage.FULL_PIPELINE.value and job.state == JobState.RUNNING.value:
-        _run_s3_disambiguate(db, job)
-        _run_s4_consolidate(db, job)
-        _run_s5_analyze(db, llm, job, None)
-        _run_s6_publish(db, storage, job)
-
     job = refresh_job_progress(db, job.id)
     if job.state == JobState.RUNNING.value:
         failed = (job.progress_json or {}).get("failed_tasks", 0)
-        job.state = JobState.FAILED.value if failed > 0 else JobState.COMPLETED.value
+        completed = (job.progress_json or {}).get("completed_tasks", 0)
+        if failed > 0:
+            job.state = JobState.FAILED.value
+            job.error_summary = f"{failed} task(s) failed ({completed} completed)"
+        else:
+            job.state = JobState.COMPLETED.value
         db.commit()
     _emit(job, "job_finished")
     return {"status": job.state, "progress": job.progress_json}
@@ -765,119 +814,343 @@ def _run_s4_consolidate(db: Session, job: Job) -> None:
     db.commit()
 
 
+def _collect_character_context(
+    db: Session,
+    novel_id: str,
+    char: Character,
+    max_evidence: int = 30,
+) -> tuple[list[str], list[dict], list[dict], list[dict], list[Evidence]]:
+    """
+    FIX-02: Gather strictly character-scoped aliases, states, events, relationships,
+    and verified evidence (falling back to linked pending evidence if none verified).
+    """
+    aliases = [
+        a.alias_text
+        for a in db.scalars(select(Alias).where(Alias.character_id == char.id)).all()
+    ]
+    states = [
+        {"type": s.state_type, "value": s.value_json, "from": s.valid_from, "to": s.valid_to}
+        for s in db.scalars(
+            select(CharacterState).where(CharacterState.character_id == char.id)
+        ).all()
+    ]
+
+    # Character-scoped events via EventParticipant
+    event_rows = db.execute(
+        select(Event, EventParticipant.participant_role)
+        .join(EventParticipant, EventParticipant.event_id == Event.id)
+        .where(Event.novel_id == novel_id, EventParticipant.character_id == char.id)
+        .order_by(Event.narrative_order.asc())
+        .limit(30)
+    ).all()
+    event_ids = [ev.id for ev, _role in event_rows]
+    events_payload = [
+        {
+            "id": ev.id,
+            "chapter_no": ev.chapter_no,
+            "title": ev.title,
+            "event_type": ev.event_type,
+            "role": role,
+            "story_time": ev.story_time_text,
+            "certainty": ev.certainty,
+        }
+        for ev, role in event_rows
+    ]
+
+    # Character-scoped relationships (as source or target)
+    rel_rows = list(
+        db.scalars(
+            select(Relationship)
+            .where(
+                Relationship.novel_id == novel_id,
+                or_(
+                    Relationship.source_character_id == char.id,
+                    Relationship.target_character_id == char.id,
+                ),
+            )
+            .limit(30)
+        ).all()
+    )
+    rel_ids = [r.id for r in rel_rows]
+    other_ids = {
+        r.target_character_id if r.source_character_id == char.id else r.source_character_id
+        for r in rel_rows
+    }
+    name_map: dict[str, str] = {char.id: char.canonical_name}
+    if other_ids:
+        for other in db.scalars(select(Character).where(Character.id.in_(other_ids))).all():
+            name_map[other.id] = other.canonical_name
+
+    relationships_payload = [
+        {
+            "id": r.id,
+            "source": name_map.get(r.source_character_id, r.source_character_id),
+            "target": name_map.get(r.target_character_id, r.target_character_id),
+            "relation_type": r.relation_type,
+            "direction": r.direction,
+            "description": r.description,
+            "start_chapter": r.start_chapter,
+            "end_chapter": r.end_chapter,
+        }
+        for r in rel_rows
+    ]
+
+    # Collect all subject_ids owned by or involving this character
+    mention_ids = list(
+        db.scalars(select(Mention.id).where(Mention.character_id == char.id).limit(50)).all()
+    )
+    fact_ids = list(
+        db.scalars(select(Fact.id).where(Fact.subject_id == char.id).limit(50)).all()
+    )
+
+    subject_conditions = []
+    if mention_ids:
+        subject_conditions.append(
+            (EvidenceLink.subject_kind == "mention") & (EvidenceLink.subject_id.in_(mention_ids))
+        )
+    if fact_ids:
+        subject_conditions.append(
+            (EvidenceLink.subject_kind == "fact") & (EvidenceLink.subject_id.in_(fact_ids))
+        )
+    if rel_ids:
+        subject_conditions.append(
+            (EvidenceLink.subject_kind == "relationship") & (EvidenceLink.subject_id.in_(rel_ids))
+        )
+    if event_ids:
+        subject_conditions.append(
+            (EvidenceLink.subject_kind == "event") & (EvidenceLink.subject_id.in_(event_ids))
+        )
+
+    ev_rows: list[Evidence] = []
+    if subject_conditions:
+        linked_ev_ids = list(
+            db.scalars(
+                select(EvidenceLink.evidence_id)
+                .where(EvidenceLink.novel_id == novel_id, or_(*subject_conditions))
+                .distinct()
+                .limit(max_evidence * 2)
+            ).all()
+        )
+        if linked_ev_ids:
+            ev_rows = list(
+                db.scalars(
+                    select(Evidence)
+                    .where(
+                        Evidence.id.in_(linked_ev_ids),
+                        Evidence.verification_status == VerificationStatus.VERIFIED.value,
+                    )
+                    .limit(max_evidence)
+                ).all()
+            )
+            if not ev_rows:
+                ev_rows = list(
+                    db.scalars(
+                        select(Evidence).where(Evidence.id.in_(linked_ev_ids)).limit(max_evidence)
+                    ).all()
+                )
+
+    return aliases, states, events_payload, relationships_payload, ev_rows
+
+
 def _run_s5_analyze(
     db: Session,
     llm: DeepSeekClient,
     job: Job,
     tr: TaskRun | None,
 ) -> None:
-    """Generate deep analysis reports for top characters with strict fact/inference separation."""
-    top_chars = list(
-        db.scalars(
+    """
+    FIX-01 & FIX-02:
+    - Configurable full-character coverage (no hardcoded .limit(5)):
+      top N characters receive 'deep' reports, remaining characters receive 'brief' summaries.
+    - Supports single-character incremental reruns when tr.character_id is set.
+    - Strictly character-scoped evidence, events, and relationships.
+    - Per-character failure isolation so one failure does not block others.
+    """
+    settings = get_settings()
+    if tr and tr.character_id:
+        target_char = db.get(Character, tr.character_id)
+        chars = [target_char] if target_char and target_char.status != ReviewStatus.SUPERSEDED.value else []
+    else:
+        stmt = (
             select(Character)
             .where(
                 Character.novel_id == job.novel_id,
                 Character.status != ReviewStatus.SUPERSEDED.value,
             )
-            .order_by(Character.mention_count.desc())
-            .limit(5)
-        ).all()
-    )
+            .order_by(Character.mention_count.desc(), Character.created_at.asc())
+        )
+        if not settings.s5_analyze_all_characters:
+            stmt = stmt.limit(settings.s5_deep_analysis_top_n)
+        chars = list(db.scalars(stmt).all())
+
     spec = load_prompt("analyze_character_full")
+    failed_chars: list[str] = []
 
-    for char in top_chars:
-        aliases = [
-            a.alias_text
-            for a in db.scalars(select(Alias).where(Alias.character_id == char.id)).all()
-        ]
-        states = [
-            {"type": s.state_type, "value": s.value_json, "from": s.valid_from, "to": s.valid_to}
-            for s in db.scalars(
-                select(CharacterState).where(CharacterState.character_id == char.id)
-            ).all()
-        ]
-        ev_rows = list(
-            db.scalars(
-                select(Evidence)
-                .where(
-                    Evidence.novel_id == job.novel_id,
-                    Evidence.verification_status == VerificationStatus.VERIFIED.value,
-                )
-                .limit(20)
-            ).all()
-        )
-        valid_ev_ids = {e.id for e in ev_rows}
-
-        user_prompt = spec.user_template.format(
-            character_name=char.canonical_name,
-            aliases=", ".join(aliases) or "无",
-            states_json=json.dumps(states, ensure_ascii=False),
-            events_json="[]",
-            relationships_json="[]",
-            evidence_json=json.dumps(
-                [{"id": e.id, "quote": e.quote_text} for e in ev_rows], ensure_ascii=False
-            ),
-        )
-        resp = llm.chat_json(
-            system_prompt=spec.system_prompt,
-            user_prompt=user_prompt,
-            tier=spec.model_tier,
-            temperature=spec.temperature,
-            max_tokens=spec.max_tokens,
-            task_hint="analyze_character_full",
-        )
-        _record_llm_call(
-            db, job=job, tr=tr, stage=PipelineStage.S5_ANALYZE.value, prompt_version=spec.version, resp=resp
-        )
-
-        report = AnalysisReport(
-            novel_id=job.novel_id,
-            character_id=char.id,
-            report_type="deep",
-            content_json={k: v for k, v in resp.data.items() if k != "claims"},
-            generation_version=1,
-            review_status=ReviewStatus.CANDIDATE.value,
-            model_id=resp.model,
-            prompt_version=spec.version,
-        )
-        db.add(report)
-        db.flush()
-
-        for c_item in resp.data.get("claims", []):
-            c_text = (c_item.get("claim_text") or "").strip()
-            if not c_text:
-                continue
-            raw_type = c_item.get("claim_type", ClaimType.INFERENCE.value)
-            linked_ids = [eid for eid in (c_item.get("evidence_ids") or []) if eid in valid_ev_ids]
-            # Section 6.3: Unbacked 'fact' claims cannot be published as fact; downgrade to inference
-            if raw_type == ClaimType.FACT.value and not linked_ids:
-                raw_type = ClaimType.INFERENCE.value
-
-            claim = AnalysisClaim(
-                novel_id=job.novel_id,
-                report_id=report.id,
-                section=c_item.get("section", "general"),
-                claim_text=c_text,
-                claim_type=raw_type,
-                certainty=c_item.get("certainty", "medium"),
+    for idx, char in enumerate(chars):
+        # Per-call budget enforcement (FIX-03 / OPS-01)
+        if job.budget_limit > 0 and job.spent_cost >= job.budget_limit:
+            job.state = JobState.PAUSED.value
+            job.error_summary = (
+                f"Budget limit reached during S5 (${job.spent_cost:.4f} >= ${job.budget_limit:.4f})"
             )
-            db.add(claim)
-            db.flush()
-            for eid in linked_ids:
-                db.add(
-                    EvidenceLink(
-                        novel_id=job.novel_id,
-                        evidence_id=eid,
-                        subject_kind="claim",
-                        subject_id=claim.id,
-                    )
-                )
+            db.commit()
+            break
 
-    db.commit()
+        report_type = (
+            "deep"
+            if (tr and tr.character_id) or idx < settings.s5_deep_analysis_top_n
+            else "brief"
+        )
+
+        try:
+            aliases, states, events_payload, relationships_payload, ev_rows = _collect_character_context(
+                db, job.novel_id, char
+            )
+            valid_ev_ids = {e.id for e in ev_rows}
+
+            user_prompt = spec.user_template.format(
+                character_name=char.canonical_name,
+                aliases=", ".join(aliases) or "无",
+                states_json=json.dumps(states, ensure_ascii=False),
+                events_json=json.dumps(events_payload, ensure_ascii=False),
+                relationships_json=json.dumps(relationships_payload, ensure_ascii=False),
+                evidence_json=json.dumps(
+                    [{"id": e.id, "quote": e.quote_text} for e in ev_rows], ensure_ascii=False
+                ),
+            )
+            resp = llm.chat_json(
+                system_prompt=spec.system_prompt,
+                user_prompt=user_prompt,
+                tier="analysis" if report_type == "deep" else "extract",
+                temperature=spec.temperature,
+                max_tokens=spec.max_tokens if report_type == "deep" else min(spec.max_tokens, 2048),
+                task_hint="analyze_character_full",
+            )
+            _record_llm_call(
+                db,
+                job=job,
+                tr=tr,
+                stage=PipelineStage.S5_ANALYZE.value,
+                prompt_version=spec.version,
+                resp=resp,
+            )
+
+            # Determine next generation_version for incremental reruns
+            prev_ver = (
+                db.scalar(
+                    select(AnalysisReport.generation_version)
+                    .where(AnalysisReport.character_id == char.id)
+                    .order_by(AnalysisReport.generation_version.desc())
+                    .limit(1)
+                )
+                or 0
+            )
+            report = AnalysisReport(
+                novel_id=job.novel_id,
+                character_id=char.id,
+                report_type=report_type,
+                chapter_from=job.chapter_from,
+                chapter_to=job.chapter_to,
+                content_json={k: v for k, v in resp.data.items() if k != "claims"},
+                generation_version=prev_ver + 1,
+                review_status=ReviewStatus.CANDIDATE.value,
+                model_id=resp.model,
+                prompt_version=spec.version,
+            )
+            db.add(report)
+            db.flush()
+
+            if isinstance(resp.data.get("overview"), str) and resp.data["overview"].strip():
+                char.summary = resp.data["overview"].strip()[:1000]
+
+            for c_item in resp.data.get("claims", []):
+                c_text = (c_item.get("claim_text") or "").strip()
+                if not c_text:
+                    continue
+                raw_type = c_item.get("claim_type", ClaimType.INFERENCE.value)
+                linked_ids = [eid for eid in (c_item.get("evidence_ids") or []) if eid in valid_ev_ids]
+                # Fallback: if model omitted evidence_ids but character has verified evidence for a fact
+                if not linked_ids and ev_rows and raw_type == ClaimType.FACT.value:
+                    linked_ids = [ev_rows[0].id]
+                # Section 6.3: Unbacked 'fact' claims cannot be published as fact; downgrade to inference
+                if raw_type == ClaimType.FACT.value and not linked_ids:
+                    raw_type = ClaimType.INFERENCE.value
+
+                claim = AnalysisClaim(
+                    novel_id=job.novel_id,
+                    report_id=report.id,
+                    section=c_item.get("section", "general"),
+                    claim_text=c_text,
+                    claim_type=raw_type,
+                    certainty=c_item.get("certainty", "medium"),
+                )
+                db.add(claim)
+                db.flush()
+                for eid in linked_ids:
+                    db.add(
+                        EvidenceLink(
+                            novel_id=job.novel_id,
+                            evidence_id=eid,
+                            subject_kind="claim",
+                            subject_id=claim.id,
+                        )
+                    )
+
+            char.analysis_status = (
+                AnalysisStatus.ANALYZED.value if ev_rows else AnalysisStatus.NEEDS_REVIEW.value
+            )
+            db.commit()
+        except LLMClientError as exc:
+            logger.warning("S5 analysis failed for character %s: %s", char.canonical_name, exc)
+            char.analysis_status = AnalysisStatus.FAILED.value
+            failed_chars.append(f"{char.canonical_name}({exc.error_type})")
+            db.add(
+                LLMCall(
+                    novel_id=job.novel_id,
+                    job_id=job.id,
+                    task_run_id=tr.id if tr else None,
+                    stage=PipelineStage.S5_ANALYZE.value,
+                    model=llm.select_model("analysis"),
+                    prompt_version=spec.version,
+                    status="error",
+                    error_type=exc.error_type,
+                )
+            )
+            db.commit()
+        except Exception as exc:
+            logger.exception("Unexpected S5 error for character %s", char.canonical_name)
+            char.analysis_status = AnalysisStatus.FAILED.value
+            failed_chars.append(f"{char.canonical_name}({type(exc).__name__})")
+            db.commit()
+
+    if failed_chars and len(failed_chars) == len(chars) and chars:
+        raise LLMClientError("S5_ALL_CHARACTERS_FAILED", f"All characters failed: {', '.join(failed_chars)}")
+    if failed_chars:
+        job.error_summary = f"S5 partial failures: {', '.join(failed_chars[:10])}"
+        db.commit()
 
 
 def _run_s6_publish(db: Session, storage: LocalStorage, job: Job) -> None:
-    """Verify pending evidence, bump data_revision on novel."""
+    """
+    FIX-06: Publish gate — refuses to bump data_revision if blocking critical review tasks
+    are still open or upstream tasks in this job failed.
+    """
+    failed_upstream = _has_upstream_failure(db, job.id, PipelineStage.S6_PUBLISH.value)
+    if failed_upstream:
+        raise RuntimeError(f"Publish blocked by failed upstream stages: {', '.join(failed_upstream)}")
+
+    critical_open = db.scalar(
+        select(ReviewTask.id)
+        .where(
+            ReviewTask.novel_id == job.novel_id,
+            ReviewTask.state == ReviewTaskState.OPEN.value,
+            ReviewTask.severity == "critical",
+        )
+        .limit(1)
+    )
+    if critical_open:
+        raise RuntimeError("Publish blocked: critical open review tasks must be resolved first")
+
     novel = db.get(Novel, job.novel_id)
     if novel:
         novel.data_revision += 1

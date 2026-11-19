@@ -25,6 +25,8 @@ async def create_novel(
     author: str | None = Form(default=None),
     chunk_size: int | None = Form(default=None),
     chunk_overlap: int | None = Form(default=None),
+    license_scope: str = Form(default="private"),
+    copyright_confirmed: bool = Form(default=False),
     db: Session = Depends(get_db),
     storage: LocalStorage = Depends(get_storage),
     settings: Settings = Depends(get_settings),
@@ -41,6 +43,8 @@ async def create_novel(
         raw_bytes=raw_bytes,
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
+        license_scope=license_scope,
+        copyright_confirmed=copyright_confirmed,
     )
     return novel
 
