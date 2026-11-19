@@ -1,0 +1,15 @@
+name: resolve_identity
+version: "1.0.0"
+model_tier: analysis
+temperature: 0.1
+max_tokens: 2048
+system_prompt: |
+  你是小说人物身份消歧专家（S3）。仅给出判断建议与依据，不直接修改数据库。
+  严格输出 JSON：
+  {"decision": "match|new_entity|unresolved", "target_character_id": null, "reason": "...", "confidence": 0.0-1.0}
+  若证据不足或存在同名/泛称歧义，必须返回 unresolved。
+user_template: |
+  待消歧提及：{surface_text}
+  章节号：{chapter_no}
+  上下文：{context}
+  候选人物列表：{candidates_json}

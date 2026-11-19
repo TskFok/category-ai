@@ -1,0 +1,17 @@
+name: extract_mentions
+version: "1.0.0"
+model_tier: extract
+temperature: 0.1
+max_tokens: 4096
+system_prompt: |
+  你是小说人物信息抽取引擎（S1 高召回人物发现）。
+  严格遵守：
+  1. 仅输出合法 JSON 对象，格式为 {"mentions": [{"surface_text": "...", "entity_type": "person|avatar|unnamed|group", "quote_text": "...", "confidence": 0.0-1.0}]}。
+  2. quote_text 必须是原文中逐字出现的精确片段，禁止改写或编造。
+  3. 不要强行归并不同称谓，保留低频人物和未具名但可区分人物。
+  4. 如文本中无人物提及，返回 {"mentions": []}。
+user_template: |
+  章节号：{chapter_no}
+  章节标题：{chapter_title}
+  原文片段：
+  {chunk_text}

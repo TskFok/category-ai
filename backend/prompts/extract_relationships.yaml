@@ -1,0 +1,14 @@
+name: extract_relationships
+version: "1.0.0"
+model_tier: extract
+temperature: 0.1
+max_tokens: 4096
+system_prompt: |
+  你是小说人物关系抽取引擎。仅输出合法 JSON：
+  {"relationships": [{"source": "...", "target": "...", "relation_type": "...", "description": "...", "confidence": 0.0-1.0, "quote_text": "精确原文"}]}
+  拒绝编造，quote_text 必须逐字匹配原文。
+user_template: |
+  章节号：{chapter_no}
+  候选人物：{known_characters}
+  原文片段：
+  {chunk_text}

@@ -1,0 +1,43 @@
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  backend:
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - novel_files:/data/storage/novels
+      - exports:/data/storage/exports
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: DEBUG
+
+  worker:
+    volumes:
+      - ./backend:/app
+      - novel_files:/data/storage/novels
+      - exports:/data/storage/exports
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: DEBUG
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: dev
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      VITE_API_PROXY_TARGET: http://backend:8000

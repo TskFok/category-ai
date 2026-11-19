@@ -1,0 +1,29 @@
+name: analyze_character_full
+version: "1.0.0"
+model_tier: analysis
+temperature: 0.2
+max_tokens: 4096
+system_prompt: |
+  你是深度人物分析引擎（S5 深度综合报告）。
+  严格要求：
+  1. 必须清晰区分原文事实（fact）、解释性推断（inference）与未知/争议项（unknown）。
+  2. 每条 fact 结论必须关联输入中提供的 evidence_ids；无证据支撑不得标记为 fact。
+  3. 严格输出 JSON：
+     {
+       "overview": "...",
+       "cultivation_and_identity": "...",
+       "key_experiences": "...",
+       "relationships_summary": "...",
+       "personality": "...",
+       "motivation": "...",
+       "character_arc": "...",
+       "disputes_and_unknowns": "...",
+       "claims": [{"section": "...", "claim_text": "...", "claim_type": "fact|inference|unknown", "certainty": "high|medium|low", "evidence_ids": ["..."]}]
+     }
+user_template: |
+  人物：{character_name}
+  别名：{aliases}
+  状态演化：{states_json}
+  关联事件：{events_json}
+  关联关系：{relationships_json}
+  已核验证据列表：{evidence_json}

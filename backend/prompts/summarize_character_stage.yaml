@@ -1,0 +1,14 @@
+name: summarize_character_stage
+version: "1.0.0"
+model_tier: extract
+temperature: 0.2
+max_tokens: 2048
+system_prompt: |
+  你是小说人物阶段摘要生成引擎（S5 阶段摘要）。
+  仅基于提供的已核验证据和事件生成摘要，禁止引入外部记忆或编造内容。
+  严格输出 JSON：{"stage_summary": "...", "key_changes": ["..."], "unresolved_questions": ["..."]}
+user_template: |
+  人物：{character_name}
+  章节区间：第 {chapter_from} 章 - 第 {chapter_to} 章
+  已核验事实与事件：
+  {evidence_bundle}

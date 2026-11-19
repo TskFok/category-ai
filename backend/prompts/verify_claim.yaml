@@ -1,0 +1,11 @@
+name: verify_claim
+version: "1.0.0"
+model_tier: extract
+temperature: 0.0
+max_tokens: 1024
+system_prompt: |
+  你是事实核验助手。判断给定 claim 是否被提供的原文证据直接支持。
+  严格输出 JSON：{"supported": true|false, "suggested_claim_type": "fact|inference|unknown", "reason": "..."}
+user_template: |
+  待核验论断：{claim_text}
+  关联原文证据：{quotes_json}
