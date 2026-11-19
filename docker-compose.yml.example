@@ -1,0 +1,154 @@
+# ==============================================================================
+# Novel Character Knowledge Engine (NCKE) 镜像部署模板
+# ==============================================================================
+# 使用说明:
+#   1. 复制本模板:
+#        cp docker-compose.yml.example docker-compose.yml
+#   2. 复制并编辑环境变量（填入 DEEPSEEK_API_KEY、数据库密码、管理员 Token 等）:
+#        cp .env.example .env
+#   3. 构建或拉取镜像（例如在 Apple Silicon 上构建 amd64 部署镜像）:
+#        make docker-build-amd64 TAG=v1.0.0
+#      或在目标服务器导入离线包:
+#        docker load -i ncke-amd64-v1.0.0.tar
+#   4. 启动服务:
+#        docker compose -f docker-compose.yml up -d
+# ==============================================================================
+
+x-app-env: &app-env
+  APP_ENV: ${APP_ENV:-production}
+  PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+  ADMIN_API_TOKEN: ${ADMIN_API_TOKEN:-change-me-in-production}
+  DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://${POSTGRES_USER:-ncke}:${POSTGRES_PASSWORD:-ncke_password}@postgres:5432/${POSTGRES_DB:-ncke}}
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+  CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+  CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/1}
+  DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+  DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+  DEEPSEEK_EXTRACT_MODEL: ${DEEPSEEK_EXTRACT_MODEL:-deepseek-flash}
+  DEEPSEEK_ANALYSIS_MODEL: ${DEEPSEEK_ANALYSIS_MODEL:-deepseek-v4-pro}
+  DEEPSEEK_MOCK_MODE: ${DEEPSEEK_MOCK_MODE:-false}
+  LLM_MAX_CONCURRENCY: ${LLM_MAX_CONCURRENCY:-4}
+  LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-90}
+  LLM_MAX_RETRIES: ${LLM_MAX_RETRIES:-3}
+  JOB_BUDGET_LIMIT: ${JOB_BUDGET_LIMIT:-50.0}
+  STORAGE_ROOT: /data/storage
+  MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-52428800}
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ncke}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ncke_password}
+      POSTGRES_DB: ${POSTGRES_DB:-ncke}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ncke} -d ${POSTGRES_DB:-ncke}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  migrate:
+    image: ${BACKEND_IMAGE:-ncke-backend:latest}
+    command: ["alembic", "upgrade", "head"]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://${POSTGRES_USER:-ncke}:${POSTGRES_PASSWORD:-ncke_password}@postgres:5432/${POSTGRES_DB:-ncke}}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - internal
+
+  backend:
+    image: ${BACKEND_IMAGE:-ncke-backend:latest}
+    restart: unless-stopped
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      <<: *app-env
+    volumes:
+      - novel_files:/data/storage/novels
+      - exports:/data/storage/exports
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health/live')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  worker:
+    image: ${BACKEND_IMAGE:-ncke-backend:latest}
+    restart: unless-stopped
+    command: ["celery", "-A", "worker.celery_app:celery_app", "worker", "--loglevel=info", "--concurrency=2"]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      <<: *app-env
+    volumes:
+      - novel_files:/data/storage/novels
+      - exports:/data/storage/exports
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - internal
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-ncke-frontend:latest}
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - internal
+
+volumes:
+  postgres_data:
+  redis_data:
+  novel_files:
+  exports:
+
+networks:
+  internal:
+    driver: bridge
